@@ -634,15 +634,44 @@
     </div>
     <script>
         // --- 1. GAS API 連携設定 (必ずデプロイ後のURLに書き換えてください) ---
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwLidfTcQ2OgS0lI-DEoawxB3HQMfU36r9y3dO1YblpWmMzJ4xjg1OKs9P3mSIbtFqofw/exec";
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyOSVwVYMbS4AfE8g8UwE3K0H179vX_tCd526-uYBXAtAxm_pb543L6R3bCCXCSIC9Xqw/exec";
         let isLoggedIn = false; let userData = null; let eventsData = []; let ordersData = []; let accompaniments = 0; let selectedEvent = null; let cropper = null; let targetCancelOrderId = null; let tempRegisterData = null;
         async function apiCall(action, data = {}) {
-            try { const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action, ...data }) }); return await response.json(); }
-            catch (e) { console.error("API POST Error:", e); return { success: false }; }
+            try {
+                // GAS CORS対策: Content-Typeをtext/plainにする（application/jsonだとOPTIONSプリフライトが飛びGASが対応していないためエラーになる）
+                const response = await fetch(GAS_API_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    cache: 'no-cache',
+                    credentials: 'omit',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    redirect: 'follow', // GASのリダイレクト追跡に必須
+                    body: JSON.stringify({ action, ...data })
+                });
+                const json = await response.json();
+                return json;
+            } catch (e) {
+                console.error("API POST Error:", e);
+                // ユーザーにネットワークエラーを通知するトーストなどを出すと親切
+                showToast("通信エラーが発生しました");
+                return { success: false, message: e.toString() };
+            }
         }
         async function fetchFromGas(action, params = {}) {
-            try { const query = new URLSearchParams({ action, ...params }).toString(); const response = await fetch(`${GAS_API_URL}?${query}`); return await response.json(); }
-            catch (e) { console.error("API GET Error:", e); return { success: false }; }
+            try {
+                const query = new URLSearchParams({ action, ...params }).toString();
+                const response = await fetch(`${GAS_API_URL}?${query}`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    credentials: 'omit',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    redirect: 'follow'
+                });
+                return await response.json();
+            } catch (e) {
+                console.error("API GET Error:", e);
+                return { success: false };
+            }
         }
         const RANK_CONFIG = [{ key: 'ENTRY', min: 0, next: 3 }, { key: 'REGULAR', min: 3, next: 10 }, { key: 'BRONZE', min: 10, next: 30 }, { key: 'SILVER', min: 30, next: 50 }, { key: 'GOLD', min: 50, next: 100 }, { key: 'PLATINUM', min: 100, next: null }];
         function getRankInfo(count) { const c = Number(count) || 0; let current = RANK_CONFIG[0]; for (const r of RANK_CONFIG) if (c >= r.min) current = r; const progress = current.next ? (c - current.min) / (current.next - current.min) : 1; return { name: current.key, progress, remaining: current.next ? current.next - c : 0, nextRank: RANK_CONFIG[RANK_CONFIG.indexOf(current) + 1]?.key }; }
