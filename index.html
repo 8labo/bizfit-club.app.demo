@@ -629,7 +629,7 @@
     </div>
     <script>
         // --- 1. GAS API 連携設定 (必ずデプロイ後のURLに書き換えてください) ---
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyVfBMkKmYJEQ_oHbRgXY6J8aMiJrzfD4X7qUUPk_cwHkRlb_BW-P19WrCoxXZ_ej9yNQ/exec";
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwLidfTcQ2OgS0lI-DEoawxB3HQMfU36r9y3dO1YblpWmMzJ4xjg1OKs9P3mSIbtFqofw/exec";
         let isLoggedIn = false; let userData = null; let eventsData = []; let ordersData = []; let accompaniments = 0; let selectedEvent = null; let cropper = null; let targetCancelOrderId = null; let tempRegisterData = null;
         async function apiCall(action, data = {}) {
             try { const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action, ...data }) }); return await response.json(); }
