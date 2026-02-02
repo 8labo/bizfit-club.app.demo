@@ -200,6 +200,22 @@
                 transform: scale(1);
             }
         }
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #ffffff;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 <body class="text-slate-800 text-left">
@@ -244,10 +260,15 @@
                 <h2 class="text-2xl font-bold mb-6 text-center">ログイン</h2>
                 <form class="space-y-4 text-left" onsubmit="event.preventDefault(); handleLoginSubmit();"><input
                         type="text" id="login-email" required placeholder="会員IDまたはメールアドレス"
-                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-8labo transition-all"><input
-                        type="password" id="login-password" required placeholder="パスワード"
-                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-8labo transition-all"><button
-                        type="submit"
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-8labo transition-all">
+                    <div class="relative">
+                        <input type="password" id="login-password" required placeholder="パスワード"
+                            class="w-full px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl focus:border-8labo transition-all">
+                        <button type="button" onclick="togglePassword('login-password', this)"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-8labo">
+                            <i data-lucide="eye" class="w-5 h-5"></i>
+                        </button>
+                    </div><button type="submit"
                         class="w-full py-4 bg-8labo text-white font-bold rounded-xl mt-4 shadow-lg shadow-orange-500/20">ログインする</button>
                 </form>
             </div>
@@ -263,9 +284,15 @@
                         class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all">
                     <input type="email" name="email" required placeholder="メールアドレス"
                         class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all">
-                    <input type="password" name="password" required pattern="[a-zA-Z0-9]{6,12}"
-                        placeholder="パスワード(半角英数字6-12桁)"
-                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all">
+                    <div class="relative">
+                        <input type="password" id="reg-password" name="password" required pattern="[a-zA-Z0-9]{6,12}"
+                            placeholder="パスワード(半角英数字6-12桁)"
+                            class="w-full px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all">
+                        <button type="button" onclick="togglePassword('reg-password', this)"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-8labo">
+                            <i data-lucide="eye" class="w-5 h-5"></i>
+                        </button>
+                    </div>
                     <div class="grid grid-cols-2 gap-3"><select name="age" required
                             class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-slate-600">
                             <option value="">年代を選択</option>
@@ -325,6 +352,19 @@
                 <div class="calendar-container"><iframe id="calendar-iframe" src="" style="border: 0" width="100%"
                         height="450" frameborder="0" scrolling="no"></iframe></div>
             </div>
+            <div class="space-y-4 px-1 text-left">
+                <h3 class="text-xl font-black flex items-center gap-2 text-slate-800"><i data-lucide="backpack"
+                        class="text-8labo"></i>持ち物・注意事項</h3>
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                    <ul class="list-disc list-inside space-y-2 text-sm text-slate-600 font-medium">
+                        <li>動きやすい服装（Tシャツ、ハーフパンツ、レギンスなど）</li>
+                        <li>室内シューズ（土足厳禁のエリアがあります）</li>
+                        <li>汗拭きタオル</li>
+                        <li>水分補給用の飲み物</li>
+                        <li><span class="text-8labo font-bold">※</span> シャワールーム完備（アメニティあり）</li>
+                    </ul>
+                </div>
+            </div>
         </section>
         <!-- 5. マイページ -->
         <section id="page-mypage" class="page max-w-5xl mx-auto space-y-3 text-left">
@@ -359,7 +399,7 @@
                             </div>
                         </div>
                         <div
-                            class="flex flex-col md:flex-row items-center justify-center md:justify-end gap-6 md:gap-8">
+                            class="flex flex-col md:flex-row items-center justify-center md:justify-end gap-2 md:gap-4">
                             <div class="progress-wrap"><svg class="progress-ring" width="150" height="150"
                                     viewBox="0 0 120 120">
                                     <circle class="bg" cx="60" cy="60" r="52"></circle>
@@ -377,14 +417,14 @@
                                     class="flex-1 text-center bg-slate-50 px-5 py-4 rounded-[2rem] border border-slate-100 shadow-inner min-w-[130px]">
                                     <span
                                         class="block text-[10px] text-slate-400 font-black mb-1 uppercase tracking-widest text-center">参加回数</span><span
-                                        class="text-3xl font-black text-8labo" id="stat-attendance-count">0<span
+                                        class="text-4xl font-black text-8labo" id="stat-attendance-count">0<span
                                             class="text-sm ml-0.5">回</span></span>
                                 </div>
                                 <div
                                     class="flex-1 text-center bg-slate-50 px-5 py-4 rounded-[2rem] border border-slate-100 shadow-inner min-w-[130px] text-center">
                                     <span
                                         class="block text-[10px] text-slate-400 font-black mb-1 uppercase tracking-widest text-center">累計ポイント</span><span
-                                        class="text-3xl font-black text-slate-700 text-center" id="stat-points">0<span
+                                        class="text-4xl font-black text-slate-700 text-center" id="stat-points">0<span
                                             class="text-sm ml-0.5 text-center">pt</span></span>
                                 </div>
                             </div>
@@ -398,7 +438,7 @@
             </div>
             <div class="space-y-4 px-1 text-left">
                 <h3 class="text-lg font-black flex items-center gap-2 text-slate-700 text-left"><i
-                        data-lucide="bookmark-check" class="text-8labo"></i>予約中のイベント</h3>
+                        data-lucide="bookmark-check" class="text-8labo"></i>予約中のプログラム</h3>
                 <div id="booked-event-list" class="space-y-3 text-left text-left"></div>
             </div>
         </section>
@@ -549,6 +589,27 @@
             </div>
         </div>
     </div>
+    <div id="modal-register-confirm" class="modal-overlay text-center">
+        <div class="bg-white rounded-[2rem] max-sm w-full p-8 shadow-2xl mx-4 text-center">
+            <h3 class="text-lg font-black mb-6 text-slate-800 text-center">以下の内容で登録します</h3>
+            <div class="space-y-4 text-left bg-slate-50 p-6 rounded-2xl mb-6 border border-slate-100">
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">会員ID (メールアドレス)</p>
+                    <p id="reg-conf-email" class="font-bold text-slate-800 break-all"></p>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">パスワード</p>
+                    <p id="reg-conf-pass" class="font-bold text-slate-800 tracking-widest">●●●●●●</p>
+                </div>
+                <p class="text-xs text-red-500 font-bold text-center mt-2">※忘れないようにご注意ください</p>
+            </div>
+            <div class="flex gap-3"><button onclick="closeModal('modal-register-confirm')"
+                    class="flex-1 py-4 border border-slate-200 rounded-2xl font-bold text-center">修正する</button><button
+                    onclick="executeRegister()"
+                    class="flex-1 py-4 bg-8labo text-white rounded-2xl font-black shadow-lg text-center">登録する</button>
+            </div>
+        </div>
+    </div>
     <div id="modal-location" class="modal-overlay text-left text-left">
         <div class="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl mx-4 text-left text-left">
             <div class="flex justify-between items-start mb-4 text-left text-left">
@@ -585,6 +646,23 @@
             try { const query = new URLSearchParams({ action, ...params }).toString(); const response = await fetch(`${GAS_API_URL}?${query}`); return await response.json(); }
             catch (e) { console.error("API GET Error:", e); return { success: false }; }
         }
+        // --- Password Toggle ---
+        function togglePassword(id, btn) {
+            const input = document.getElementById(id);
+            if (!input) return;
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            const icon = btn.querySelector('i');
+            if (icon) {
+                if (isPassword) {
+                    icon.innerHTML = '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/>';
+                } else {
+                    icon.innerHTML = '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>';
+                }
+                btn.innerHTML = `<i data-lucide="${isPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i>`;
+                lucide.createIcons();
+            }
+        }
         const RANK_CONFIG = [{ key: 'ENTRY', min: 0, next: 3 }, { key: 'REGULAR', min: 3, next: 10 }, { key: 'BRONZE', min: 10, next: 30 }, { key: 'SILVER', min: 30, next: 50 }, { key: 'GOLD', min: 50, next: 100 }, { key: 'PLATINUM', min: 100, next: null }];
         function getRankInfo(count) { const c = Number(count) || 0; let current = RANK_CONFIG[0]; for (const r of RANK_CONFIG) if (c >= r.min) current = r; const progress = current.next ? (c - current.min) / (current.next - current.min) : 1; return { name: current.key, progress, remaining: current.next ? current.next - c : 0, nextRank: RANK_CONFIG[RANK_CONFIG.indexOf(current) + 1]?.key }; }
         function triggerPhotoUpload() { document.getElementById('profile-photo-input').click(); }
@@ -618,31 +696,32 @@
         }
         // --- 画像処理ロジック ---
         const DEFAULT_IMAGES = {
-            'ヨガ': 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=600',
-            'ストレッチ': 'https://images.unsplash.com/photo-1552196564-972b3693f00a?q=80&w=600',
-            'トレーニング': 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=600',
-            'ランニング': 'https://images.unsplash.com/photo-1552674605-1e227284b80e?q=80&w=600',
-            'ピラティス': 'https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=600',
-            '朝活': 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=600',
-            '夕活': 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=600',
-            'デフォルト': 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=600',
-            'マップ': 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=600' // シンプルな地図っぽい画像
+            'map': 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=600',
+            'yoga': 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=600',
+            'stretch': 'https://images.unsplash.com/photo-1552196564-972b3693f00a?q=80&w=600',
+            'training': 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=600',
+            'run': 'https://images.unsplash.com/photo-1552674605-1e227284b80e?q=80&w=600',
+            'pilates': 'https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=600',
+            'morning': 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=600',
+            'night': 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=600',
+            'default': 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=600'
         };
         function resolveEventImage(event) {
             if (event.img && event.img.startsWith('http')) return event.img;
-            const title = event.title || "";
-            if (title.includes('ヨガ')) return DEFAULT_IMAGES['ヨガ'];
-            if (title.includes('ストレッチ')) return DEFAULT_IMAGES['ストレッチ'];
-            if (title.includes('トレーニング') || title.includes('HIIT')) return DEFAULT_IMAGES['トレーニング'];
-            if (title.includes('ラン') || title.includes('走')) return DEFAULT_IMAGES['ランニング'];
-            if (title.includes('ピラティス')) return DEFAULT_IMAGES['ピラティス'];
-            if (title.includes('朝')) return DEFAULT_IMAGES['朝活'];
-            if (title.includes('夕') || title.includes('夜')) return DEFAULT_IMAGES['夕活'];
-            return DEFAULT_IMAGES['デフォルト'];
+            const title = (event.title || "").toLowerCase();
+            const desc = (event.description || "").toLowerCase();
+            if (title.includes('ヨガ') || title.includes('yoga') || desc.includes('ヨガ')) return DEFAULT_IMAGES['yoga'];
+            if (title.includes('ストレッチ') || desc.includes('ストレッチ')) return DEFAULT_IMAGES['stretch'];
+            if (title.includes('トレーニング') || title.includes('hiit') || title.includes('筋トレ')) return DEFAULT_IMAGES['training'];
+            if (title.includes('ラン') || title.includes('走') || title.includes('マラソン')) return DEFAULT_IMAGES['run'];
+            if (title.includes('ピラティス')) return DEFAULT_IMAGES['pilates'];
+            if (title.includes('朝') || title.includes('morning')) return DEFAULT_IMAGES['morning'];
+            if (title.includes('夕') || title.includes('夜') || title.includes('night')) return DEFAULT_IMAGES['night'];
+            return DEFAULT_IMAGES['default'];
         }
         function resolveMapImage(url) {
             if (url && url.startsWith('http')) return url;
-            return DEFAULT_IMAGES['マップ'];
+            return DEFAULT_IMAGES['map'];
         }
         async function renderEvents() {
             try {
@@ -655,25 +734,25 @@
                         const rem = e.capacity - e.enrollees;
                         const cPrice = (e.personalPrice !== e.companionPrice && e.maxAccompaniments > 0) ? `<span class="text-[10px] text-slate-400 font-bold ml-1 text-left">(同伴 ¥${e.companionPrice.toLocaleString()})</span>` : "";
                         return `
-                        <div class="bg-white rounded-[2rem] border border-slate-200 p-6 card-hover flex flex-col justify-between h-full shadow-sm text-left event-card">
-                            <div class="space-y-4 text-left">
-                                <div class="flex justify-between items-center"><span class="text-sm font-black bg-orange-50 text-8labo px-3 py-1 rounded-lg tracking-tight">${e.date}</span><span class="text-[10px] font-bold ${rem <= 0 ? 'text-red-500 bg-red-50' : 'text-slate-400 bg-slate-50'} px-2 py-1 rounded-md text-left">${rem <= 0 ? '満員' : `残り ${rem} 名`}</span></div>
-                                <div class="space-y-1 text-left">
-                                    <div class="flex items-start gap-3 justify-between text-left">
-                                        <h4 class="font-black text-slate-800 text-lg leading-tight flex-grow break-words text-left text-left">${e.title}</h4>
-                                        <button onclick="event.stopPropagation(); openDetailModal('${e.id}')" class="shrink-0 w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-300 hover:text-8labo rounded-full transition-colors relative z-10"><i data-lucide="info" class="w-4 h-4"></i></button>
-                                    </div>
-                                    <div class="price-align-row text-left"><p class="text-8labo font-black text-xl tracking-tighter text-left text-left">${e.time}</p><div class="text-8labo font-black text-sm text-right text-right"><span>¥${e.personalPrice.toLocaleString()}</span>${cPrice}</div></div>
-                                </div>
-                                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100 text-left">
-                                    <p class="text-[11px] text-slate-500 font-bold flex items-center gap-1 min-w-0 text-left"><i data-lucide="map-pin" class="w-3 h-3 text-8labo/50 text-left text-left"></i> <span class="truncate text-left text-left">${e.location}</span></p>
-                                    <button onclick="event.stopPropagation(); openLocationModal('${e.id}')" class="text-[9px] bg-white border border-slate-200 text-slate-400 px-2 py-1 rounded-lg font-black shadow-sm hover:border-8labo relative z-10">MAP</button>
-                                </div>
-                            </div>
-                            <div class="mt-4 text-left">
-                                ${isM ? (isB ? `<div class="w-full py-4 bg-green-50 text-green-600 rounded-2xl text-sm font-black text-center flex items-center justify-center gap-2 shadow-inner text-center"><i data-lucide="check-circle" class="w-4 h-4 text-center text-center"></i> 予約済み</div>` : `<div class="flex items-center justify-start px-1 mb-2 text-left text-left"><label class="flex items-center gap-2 cursor-pointer group text-left text-left"><input type="checkbox" id="cal-${e.id}" class="w-4 h-4 accent-orange-500 rounded border-slate-300 transition-all text-left text-left relative z-10"><span class="text-[10px] text-slate-400 group-hover:text-8labo text-left text-left">カレンダー追加</span></label></div><button onclick="event.stopPropagation(); confirmAction('${e.id}')" ${rem <= 0 ? 'disabled' : ''} class="w-full py-4 ${rem <= 0 ? 'bg-slate-100 text-slate-300' : 'bg-8labo text-white shadow-lg active:scale-95'} rounded-2xl text-sm font-black transition-all relative z-10">申し込む</button>`) : `<button onclick="event.stopPropagation(); navigateTo('login')" class="w-full py-4 bg-slate-900 text-white rounded-2xl text-sm font-black shadow-lg active:scale-95 text-center text-center relative z-10">ログインして予約</button>`}
-                            </div>
-                        </div>`;
+                         <div class="bg-white rounded-[2rem] border border-slate-200 p-6 card-hover flex flex-col justify-between h-full shadow-sm text-left event-card">
+                             <div class="space-y-4 text-left">
+                                 <div class="flex justify-between items-center"><span class="text-sm font-black bg-orange-50 text-8labo px-3 py-1 rounded-lg tracking-tight">${e.date}</span><span class="text-[10px] font-bold ${rem <= 0 ? 'text-red-500 bg-red-50' : 'text-slate-400 bg-slate-50'} px-2 py-1 rounded-md text-left">${rem <= 0 ? '満員' : `残り ${rem} 名`}</span></div>
+                                 <div class="space-y-1 text-left">
+                                     <div class="flex items-start gap-3 justify-between text-left">
+                                         <h4 class="font-black text-slate-800 text-lg leading-tight flex-grow break-words text-left text-left">${e.title}</h4>
+                                         <button onclick="event.stopPropagation(); openDetailModal('${e.id}')" class="shrink-0 w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-300 hover:text-8labo rounded-full transition-colors relative z-10"><i data-lucide="info" class="w-4 h-4"></i></button>
+                                     </div>
+                                     <div class="price-align-row text-left"><p class="text-8labo font-black text-xl tracking-tighter text-left text-left">${e.time}</p><div class="text-8labo font-black text-sm text-right text-right"><span>¥${e.personalPrice.toLocaleString()}</span>${cPrice}</div></div>
+                                 </div>
+                                 <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100 text-left">
+                                     <p class="text-[11px] text-slate-500 font-bold flex items-center gap-1 min-w-0 text-left"><i data-lucide="map-pin" class="w-3 h-3 text-8labo/50 text-left text-left"></i> <span class="truncate text-left text-left">${e.location}</span></p>
+                                     <button onclick="event.stopPropagation(); openLocationModal('${e.id}')" class="text-[9px] bg-white border border-slate-200 text-slate-400 px-2 py-1 rounded-lg font-black shadow-sm hover:border-8labo relative z-10">MAP</button>
+                                 </div>
+                             </div>
+                             <div class="mt-4 text-left">
+                                 ${isM ? (isB ? `<div class="w-full py-4 bg-green-50 text-green-600 rounded-2xl text-sm font-black text-center flex items-center justify-center gap-2 shadow-inner text-center"><i data-lucide="check-circle" class="w-4 h-4 text-center text-center"></i> 予約済み</div>` : `<div class="flex items-center justify-start px-1 mb-2 text-left text-left"><label class="flex items-center gap-2 cursor-pointer group text-left text-left"><input type="checkbox" id="cal-${e.id}" class="w-4 h-4 accent-orange-500 rounded border-slate-300 transition-all text-left text-left relative z-10"><span class="text-[10px] text-slate-400 group-hover:text-8labo text-left text-left">カレンダー追加</span></label></div><button onclick="event.stopPropagation(); confirmAction('${e.id}')" ${rem <= 0 ? 'disabled' : ''} class="w-full py-4 ${rem <= 0 ? 'bg-slate-100 text-slate-300' : 'bg-8labo text-white shadow-lg active:scale-95'} rounded-2xl text-sm font-black transition-all relative z-10">申し込む</button>`) : `<button onclick="event.stopPropagation(); navigateTo('login')" class="w-full py-4 bg-slate-900 text-white rounded-2xl text-sm font-black shadow-lg active:scale-95 text-center text-center relative z-10">ログインして予約</button>`}
+                             </div>
+                         </div>`;
                     }).join('');
                 });
                 lucide.createIcons();
@@ -686,7 +765,6 @@
             document.getElementById('detail-description').innerText = selectedEvent.description;
             document.getElementById('detail-price-text').innerText = `¥${selectedEvent.personalPrice.toLocaleString()}`;
             document.getElementById('detail-point-text').innerText = `${selectedEvent.selfPoints} pt`;
-            // 画像自動補完
             document.getElementById('detail-img').src = resolveEventImage(selectedEvent);
             openModal('modal-detail');
         }
@@ -695,10 +773,13 @@
             if (!selectedEvent) return;
             document.getElementById('loc-name').innerText = selectedEvent.location;
             document.getElementById('loc-address').innerText = selectedEvent.address;
-            // マップ画像フォールバック
             const mapImg = document.getElementById('loc-map-img');
             mapImg.src = resolveMapImage(selectedEvent.map);
-            mapImg.onerror = function () { this.src = DEFAULT_IMAGES['マップ']; };
+            mapImg.onerror = function () { this.src = DEFAULT_IMAGES['map']; };
+            mapImg.parentElement.onclick = function () {
+                const query = encodeURIComponent(selectedEvent.address || selectedEvent.location);
+                window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+            };
             openModal('modal-location');
         }
         function confirmAction(id) {
@@ -715,7 +796,7 @@
                 if (cs) cs.classList.add('hidden');
                 if (nh) nh.classList.remove('hidden');
             }
-            document.getElementById('confirm-details').innerHTML = `<p class="font-black text-slate-800 text-sm leading-tight mb-1.5 break-words text-left text-left">${selectedEvent.title}</p><div class="text-[10px] text-slate-400 font-medium leading-tight text-left text-left text-left"><p>${selectedEvent.date} / ${selectedEvent.time}</p><p>場所: ${selectedEvent.location}</p></div>`;
+            document.getElementById('confirm-details').innerHTML = `<p class="font-black text-slate-800 text-base leading-tight mb-2 break-words text-left text-left">${selectedEvent.title}</p><div class="text-xs text-slate-500 font-bold leading-tight text-left text-left text-left"><p class="mb-1">${selectedEvent.date} / ${selectedEvent.time}</p><p>場所: ${selectedEvent.location}</p></div>`;
             const chk = document.getElementById('consent-check');
             if (chk) chk.checked = false;
             updateCounterUI(); openModal('modal-confirm');
@@ -750,9 +831,21 @@
         }
         function toggleBookingButton() { const btn = document.getElementById('btn-final-confirm'); const chk = document.getElementById('consent-check'); if (accompaniments >= 1 && !chk.checked) btn.classList.add('opacity-20', 'pointer-events-none'); else btn.classList.remove('opacity-20', 'pointer-events-none'); }
         async function handleFinalBooking() {
+            if (ordersData.some(o => o.eventId === selectedEvent.id && o.status !== 'キャンセル')) {
+                showToast("既に予約済みです");
+                closeModal('modal-confirm');
+                return;
+            }
+            const btn = document.getElementById('btn-final-confirm');
+            const originalText = btn.innerText;
+            btn.innerHTML = '<div class="loading-spinner mx-auto"></div>';
+            btn.disabled = true;
             const booking = { id: 'ord_' + Date.now(), eventId: selectedEvent.id, email: userData.email, userName: userData.name, companionCount: accompaniments, status: '予約中' };
             ordersData.push(booking); await apiCall('recordBooking', booking);
-            saveAppToLocal(); closeModal('modal-confirm'); showToast(`予約を確定しました`); renderEvents();
+            saveAppToLocal();
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            closeModal('modal-confirm'); showToast(`予約を確定しました`); renderEvents(); refreshAndRenderMyPage();
         }
         async function handleLoginSubmit() {
             const email = document.getElementById('login-email').value; const pass = document.getElementById('login-password').value;
@@ -760,12 +853,30 @@
             if (res && res.success && res.user) { userData = res.user; isLoggedIn = true; saveAppToLocal(); navigateTo('dashboard'); }
             else { alert("IDまたはパスワードが正しくありません"); }
         }
-        async function handleRegisterSubmit(form) {
-            userData = Object.fromEntries(new FormData(form).entries());
+        function handleRegisterSubmit(form) {
+            const formData = new FormData(form);
+            const email = formData.get('email');
+            const pass = formData.get('password');
+            document.getElementById('reg-conf-email').innerText = email;
+            document.getElementById('reg-conf-pass').innerText = pass;
+            userData = Object.fromEntries(formData.entries());
+            openModal('modal-register-confirm');
+        }
+        async function executeRegister() {
+            const btn = document.querySelector('#modal-register-confirm button:last-child');
+            const originalText = btn.innerText;
+            btn.innerHTML = '<div class="loading-spinner mx-auto"></div>';
+            btn.disabled = true;
             userData.attendanceCount = 0; userData.points = 0; ordersData = [];
-            await apiCall('saveUserData', userData); saveAppToLocal(); isLoggedIn = true; navigateTo('dashboard');
+            await apiCall('saveUserData', userData); saveAppToLocal();
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            isLoggedIn = true;
+            closeModal('modal-register-confirm');
+            navigateTo('dashboard');
         }
         function refreshAndRenderMyPage() {
+            if (!userData) return;
             const info = getRankInfo(userData.attendanceCount); document.getElementById('profile-name').innerText = userData.name + " 様";
             document.getElementById('profile-email').innerText = userData.email; document.getElementById('progress-rank-name').innerText = info.name;
             document.getElementById('progress-sub').innerText = info.nextRank ? `あと${info.remaining}回で ${info.nextRank}` : "最高ランク到達";
@@ -775,17 +886,29 @@
             applyProfileImageToUI(userData.profileImage); renderBookedEvents();
         }
         function renderBookedEvents() {
-            const myo = ordersData.filter(o => o.status !== 'キャンセル'); const container = document.getElementById('booked-event-list');
-            if (myo.length === 0) { container.innerHTML = `<div class="bg-slate-50 border-2 border-dashed border-slate-100 rounded-3xl p-8 text-center text-slate-300 font-bold text-sm">予約中のイベントはありません</div>`; return; }
-            container.innerHTML = myo.map(o => {
-                const e = eventsData.find(x => x.id === o.eventId); if (!e) return '';
+            const tempOrders = [...ordersData];
+            const myo = tempOrders.filter(o => o.status !== 'キャンセル');
+            const uniqueEventIds = [...new Set(myo.map(o => o.eventId))];
+            const container = document.getElementById('booked-event-list');
+            if (uniqueEventIds.length === 0) { container.innerHTML = `<div class="bg-slate-50 border-2 border-dashed border-slate-100 rounded-3xl p-8 text-center text-slate-300 font-bold text-sm">予約中のプログラムはありません</div>`; return; }
+            container.innerHTML = uniqueEventIds.map(eid => {
+                const e = eventsData.find(x => x.id === eid);
+                const o = myo.reverse().find(order => order.eventId === eid);
+                myo.reverse();
+                if (!e || !o) return '';
                 return `<div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between gap-4 overflow-hidden"><div class="flex items-center gap-3 min-w-0 flex-grow text-left text-left"><div class="bg-orange-50 text-8labo w-12 h-12 rounded-xl flex flex-col items-center justify-center font-black text-[10px] leading-none shrink-0 tracking-tighter text-center text-center"><span>${e.date.split('.')[1]}月</span><span class="text-sm mt-0.5 text-center text-center">${e.date.split('.')[2].split(' ')[0]}日</span></div><div class="min-w-0 flex-grow text-left text-left text-left"><h4 class="font-bold text-sm text-slate-800 leading-tight break-words text-left text-left text-left">${e.title}</h4><p class="text-[10px] text-slate-400 font-medium mt-1 text-left text-left text-left">@ ${e.location}</p></div></div><button onclick="event.stopPropagation(); targetCancelOrderId='${o.id}'; selectedEvent = eventsData.find(ev => ev.id == '${o.eventId}'); openModal('modal-cancel');" class="text-[11px] font-black text-slate-300 hover:text-red-500 uppercase shrink-0 pl-2 transition-colors relative z-10">取消</button></div>`;
             }).join(''); lucide.createIcons();
         }
         async function handleBookingCancel() {
+            const btn = document.querySelector('#modal-cancel button:last-child');
+            const originalText = btn.innerText;
+            btn.innerHTML = '<div class="loading-spinner mx-auto"></div>';
+            btn.disabled = true;
             await apiCall('cancelBooking', { userName: userData.name, eventId: selectedEvent.id });
             const idx = ordersData.findIndex(o => o.id === targetCancelOrderId);
             if (idx !== -1) { ordersData[idx].status = 'キャンセル'; saveAppToLocal(); closeModal('modal-cancel'); showToast('キャンセルしました'); refreshAndRenderMyPage(); renderEvents(); }
+            btn.innerHTML = originalText;
+            btn.disabled = false;
         }
         function saveAppToLocal() { localStorage.setItem('bizfit_master_v38', JSON.stringify({ userData, ordersData })); }
         function loadAppFromLocal() { const saved = localStorage.getItem('bizfit_master_v38'); if (saved) { const p = JSON.parse(saved); userData = p.userData; ordersData = p.ordersData; return true; } return false; }
