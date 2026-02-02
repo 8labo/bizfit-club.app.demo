@@ -632,147 +632,316 @@
     <div id="toast"
         class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm font-black px-5 py-3 rounded-2xl shadow-2xl opacity-0 transition-opacity z-[300000] pointer-events-none text-center text-center">
     </div>
-    <script>
-        // --- 1. GAS API 連携設定 (必ずデプロイ後のURLに書き換えてください) ---
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyOSVwVYMbS4AfE8g8UwE3K0H179vX_tCd526-uYBXAtAxm_pb543L6R3bCCXCSIC9Xqw/exec";
-        let isLoggedIn = false; let userData = null; let eventsData = []; let ordersData = []; let accompaniments = 0; let selectedEvent = null; let cropper = null; let targetCancelOrderId = null; let tempRegisterData = null;
-        async function apiCall(action, data = {}) {
-            try {
-                // GAS CORS対策: Content-Typeをtext/plainにする（application/jsonだとOPTIONSプリフライトが飛びGASが対応していないためエラーになる）
-                const response = await fetch(GAS_API_URL, {
-                    method: 'POST',
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    credentials: 'omit',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    redirect: 'follow', // GASのリダイレクト追跡に必須
-                    body: JSON.stringify({ action, ...data })
-                });
-                const json = await response.json();
-                return json;
-            } catch (e) {
-                console.error("API POST Error:", e);
-                // ユーザーにネットワークエラーを通知するトーストなどを出すと親切
-                showToast("通信エラーが発生しました");
-                return { success: false, message: e.toString() };
-            }
+    /* =========================================
+    1. Config & State (設定と状態管理)
+    ========================================= */
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyOSVwVYMbS4AfE8g8UwE3K0H179vX_tCd526-uYBXAtAxm_pb543L6R3bCCXCSIC9Xqw/exec"; // ← 必ずデプロイ後のURLに書き換えてください
+    const RANK_CONFIG = [
+    { key: 'ENTRY', min: 0, next: 3 },
+    { key: 'REGULAR', min: 3, next: 10 },
+    { key: 'BRONZE', min: 10, next: 30 },
+    { key: 'SILVER', min: 30, next: 50 },
+    { key: 'GOLD', min: 50, next: 100 },
+    { key: 'PLATINUM', min: 100, next: null }
+    ];
+    const DEFAULT_IMAGES = {
+    'ヨガ': 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=600',
+    'ストレッチ': 'https://images.unsplash.com/photo-1552196564-972b3693f00a?q=80&w=600',
+    'トレーニング': 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=600',
+    'ランニング': 'https://images.unsplash.com/photo-1552674605-1e227284b80e?q=80&w=600',
+    'ピラティス': 'https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=600',
+    '朝活': 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=600',
+    '夕活': 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=600',
+    'デフォルト': 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=600',
+    'マップ': 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=600'
+    };
+    // App State
+    let isLoggedIn = false;
+    let userData = null;
+    let eventsData = [];
+    let ordersData = [];
+    let accompaniments = 0;
+    let selectedEvent = null;
+    let cropper = null;
+    let targetCancelOrderId = null;
+    let tempRegisterData = null;
+    /* =========================================
+    2. API Layer (通信処理)
+    ========================================= */
+    async function apiCall(action, data = {}) {
+    try {
+    // GAS通信エラー対策: text/plain & redirect: follow
+    const response = await fetch(GAS_API_URL, {
+    method: 'POST',
+    mode: 'cors',
+    cache: 'no-cache',
+    credentials: 'omit',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    redirect: 'follow',
+    body: JSON.stringify({ action, ...data })
+    });
+    const json = await response.json();
+    return json;
+    } catch (e) {
+    console.error("API POST Error:", e);
+    alert(`通信エラーが発生しました。\n・インターネット接続を確認してください\n・GASのURLが正しいか確認してください\n\nError: ${e.toString()}`);
+    return { success: false, message: e.toString() };
+    }
+    }
+    async function fetchFromGas(action, params = {}) {
+    try {
+    const query = new URLSearchParams({ action, ...params }).toString();
+    const response = await fetch(`${GAS_API_URL}?${query}`, {
+    method: 'GET',
+    mode: 'cors',
+    credentials: 'omit',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    redirect: 'follow'
+    });
+    return await response.json();
+    } catch (e) {
+    console.error("API GET Error:", e);
+    // GETのエラーは画面に影響出るが、alert連発を防ぐためconsoleのみ推奨の場合もあるが、
+    // 今回は「何も表示されない」を防ぐためあえて出すか、あるいは静かに失敗させる。
+    // 初期ロード時なので、失敗したらalert出したほうが親切
+    alert(`データ取得エラー\nGAS URLの設定を確認してください。\nError: ${e.toString()}`);
+    return { success: false };
+    }
+    }
+    /* =========================================
+    3. Logic Layer (ロジック・計算)
+    ========================================= */
+    function getRankInfo(count) {
+    const c = Number(count) || 0;
+    let current = RANK_CONFIG[0];
+    for (const r of RANK_CONFIG) if (c >= r.min) current = r;
+    const progress = current.next ? (c - current.min) / (current.next - current.min) : 1;
+    return {
+    name: current.key,
+    progress,
+    remaining: current.next ? current.next - c : 0,
+    nextRank: RANK_CONFIG[RANK_CONFIG.indexOf(current) + 1]?.key
+    };
+    }
+    function resolveEventImage(event) {
+    if (event.img && event.img.startsWith('http')) return event.img;
+    const title = event.title || "";
+    for (const key in DEFAULT_IMAGES) {
+    if (key !== 'デフォルト' && key !== 'マップ' && title.includes(key.replace('ニング', '').replace('活', ''))) { // 簡易マッチング
+    return DEFAULT_IMAGES[key];
+    }
+    }
+    // 少しマッチングルールを調整
+    if (title.includes('ヨガ')) return DEFAULT_IMAGES['ヨガ'];
+    if (title.includes('ストレッチ')) return DEFAULT_IMAGES['ストレッチ'];
+    if (title.includes('トレーニング') || title.includes('HIIT')) return DEFAULT_IMAGES['トレーニング'];
+    if (title.includes('ラン') || title.includes('走')) return DEFAULT_IMAGES['ランニング'];
+    if (title.includes('ピラティス')) return DEFAULT_IMAGES['ピラティス'];
+    if (title.includes('朝')) return DEFAULT_IMAGES['朝活'];
+    if (title.includes('夕') || title.includes('夜')) return DEFAULT_IMAGES['夕活'];
+    return DEFAULT_IMAGES['デフォルト'];
+    }
+    function resolveMapImage(url) {
+    if (url && url.startsWith('http')) return url;
+    return DEFAULT_IMAGES['マップ'];
+    }
+    function saveAppToLocal() {
+    localStorage.setItem('bizfit_master_v38', JSON.stringify({ userData, ordersData }));
+    }
+    function loadAppFromLocal() {
+    const saved = localStorage.getItem('bizfit_master_v38');
+    if (saved) {
+    try {
+    const p = JSON.parse(saved);
+    userData = p.userData;
+    ordersData = p.ordersData;
+    return true;
+    } catch (e) {
+    console.error("Load Error", e);
+    return false;
+    }
+    }
+    return false;
+    }
+    function logout() {
+    isLoggedIn = false;
+    userData = null;
+    ordersData = [];
+    localStorage.removeItem('bizfit_master_v38');
+    closeModal('modal-logout');
+    navigateTo('guest-top');
+    showToast("ログアウトしました");
+    }
+    function devReset() {
+    if(confirm("ローカルデータを全てリセットしますか？")) {
+    logout();
+    location.reload();
+    }
+    }
+    /* =========================================
+    4. UI Layer (画面操作・描画)
+    ========================================= */
+    // Navigation
+    function navigateTo(p) {
+    document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+    const t = document.getElementById(`page-${p}`);
+    if (t) t.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    updateHeader(p);
+    if (p === 'mypage') refreshAndRenderMyPage();
+    }
+    function goHome() {
+    navigateTo(isLoggedIn ? 'dashboard' : 'guest-top');
+    }
+    function updateHeader(p) {
+    const nav = document.getElementById('header-nav');
+    if (isLoggedIn) {
+    nav.innerHTML = `
+    <div onclick="event.stopPropagation(); navigateTo('mypage')"
+        class="flex items-center gap-2 cursor-pointer p-1 pr-3 hover:bg-slate-50 rounded-full transition-all text-left">
+        <span class="text-sm font-bold text-slate-600 text-left">${userData.name}</span>
+        <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 shadow-inner">
+            <i data-lucide="user" class="w-4 h-4 text-left"></i>
+        </div>
+    </div>`;
+    } else {
+    const label = p === 'login' ? '新規登録' : 'ログイン';
+    const target = p === 'login' ? 'register' : 'login';
+    nav.innerHTML = `
+    <button onclick="event.stopPropagation(); navigateTo('${target}')"
+        class="text-xs font-black text-8labo border-2 border-8labo px-4 py-2 rounded-xl hover:bg-orange-50 uppercase tracking-widest text-center">
+        ${label}
+    </button>`;
+    }
+    lucide.createIcons();
+    }
+    function showToast(m) {
+    const t = document.getElementById('toast');
+    t.innerText = m;
+    t.style.opacity = '1';
+    setTimeout(() => t.style.opacity = '0', 3000);
+    }
+    // Modals
+    function openModal(id) {
+    const m = document.getElementById(id);
+    if(m) {
+    m.classList.add('active');
+    m.querySelector('div').classList.remove('scale-95');
+    }
+    }
+    function closeModal(id) {
+    const m = document.getElementById(id);
+    if(m) {
+    m.querySelector('div').classList.add('scale-95');
+    setTimeout(() => m.classList.remove('active'), 200);
+    }
+    }
+    // Event Rendering
+    async function renderEvents() {
+    try {
+    // Skeleton Loading
+    const grids = [document.getElementById('guest-event-grid'), document.getElementById('member-event-grid')];
+    grids.forEach(g => {
+    if (g) g.innerHTML = Array(4).fill(0).map(() => `<div
+        class="bg-slate-50 rounded-[2rem] border border-slate-100 p-6 h-64 animate-pulse"></div>`).join('');
+    });
+    const res = await fetchFromGas('getEventsData');
+    if (!res || !res.success) {
+    // エラー時はスケルトン消してメッセージ
+    grids.forEach(g => { if(g) g.innerHTML = '<p class="text-slate-400 p-4">イベント情報の取得に失敗しました</p>'; });
+    return;
+    }
+    eventsData = res.events;
+    if(res.calendarUrl) {
+    const calFrame = document.getElementById('calendar-iframe');
+    if(calFrame) calFrame.src = res.calendarUrl;
+    }
+    grids.forEach((grid, idx) => {
+    if (!grid) return;
+    const isMemberGrid = idx === 1; // 0:guest, 1:member
+    if (eventsData.length === 0) {
+    grid.innerHTML = '<p class="text-slate-400 p-4">現在予定されているイベントはありません</p>';
+    return;
+    }
+    grid.innerHTML = eventsData.map(e => {
+    const isBooked = ordersData.some(o => o.eventId === e.id && o.status !== 'キャンセル');
+    const rem = e.capacity - e.enrollees;
+    const hasCompanionPrice = (e.personalPrice !== e.companionPrice && e.maxAccompaniments > 0);
+    const cPrice = hasCompanionPrice ? `<span class="text-[10px] text-slate-400 font-bold ml-1 text-left">(同伴
+        ¥${e.companionPrice.toLocaleString()})</span>` : "";
+    // Button Logic
+    let buttonHtml = '';
+    if (isMemberGrid) {
+    if (isBooked) {
+    buttonHtml = `<div
+        class="w-full py-4 bg-green-50 text-green-600 rounded-2xl text-sm font-black text-center flex items-center justify-center gap-2 shadow-inner">
+        <i data-lucide="check-circle" class="w-4 h-4"></i> 予約済み</div>`;
+    } else {
+    const addCalHtml = `<div class="flex items-center justify-start px-1 mb-2 text-left"><label
+            class="flex items-center gap-2 cursor-pointer group"><input type="checkbox" id="cal-${e.id}"
+                class="w-4 h-4 accent-orange-500 rounded border-slate-300 transition-all relative z-10"><span
+                class="text-[10px] text-slate-400 group-hover:text-8labo">カレンダー追加</span></label></div>`;
+    const btnClass = rem <= 0 ? 'bg-slate-100 text-slate-300 pointer-events-none'
+        : 'bg-8labo text-white shadow-lg active:scale-95' ; const btnText=rem <=0 ? '定員に達しました' : '申し込む' ; const
+        disabledAttr=rem <=0 ? 'disabled' : '' ; buttonHtml=`${addCalHtml}<button
+        onclick="event.stopPropagation(); confirmAction('${e.id}')" ${disabledAttr}
+        class="w-full py-4 ${btnClass} rounded-2xl text-sm font-black transition-all relative z-10">
+        ${btnText}</button>`;
         }
-        async function fetchFromGas(action, params = {}) {
-            try {
-                const query = new URLSearchParams({ action, ...params }).toString();
-                const response = await fetch(`${GAS_API_URL}?${query}`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    credentials: 'omit',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    redirect: 'follow'
-                });
-                return await response.json();
-            } catch (e) {
-                console.error("API GET Error:", e);
-                return { success: false };
-            }
+        } else {
+        // Guest
+        buttonHtml = `<button onclick="event.stopPropagation(); navigateTo('login')"
+            class="w-full py-4 bg-slate-900 text-white rounded-2xl text-sm font-black shadow-lg active:scale-95 text-center relative z-10">ログインして予約</button>`;
         }
-        const RANK_CONFIG = [{ key: 'ENTRY', min: 0, next: 3 }, { key: 'REGULAR', min: 3, next: 10 }, { key: 'BRONZE', min: 10, next: 30 }, { key: 'SILVER', min: 30, next: 50 }, { key: 'GOLD', min: 50, next: 100 }, { key: 'PLATINUM', min: 100, next: null }];
-        function getRankInfo(count) { const c = Number(count) || 0; let current = RANK_CONFIG[0]; for (const r of RANK_CONFIG) if (c >= r.min) current = r; const progress = current.next ? (c - current.min) / (current.next - current.min) : 1; return { name: current.key, progress, remaining: current.next ? current.next - c : 0, nextRank: RANK_CONFIG[RANK_CONFIG.indexOf(current) + 1]?.key }; }
-        function triggerPhotoUpload() { document.getElementById('profile-photo-input').click(); }
-        function handlePhotoChange(input) {
-            const file = input.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = document.getElementById('crop-image'); img.src = e.target.result;
-                openModal('modal-crop'); if (cropper) cropper.destroy();
-                cropper = new Cropper(img, { aspectRatio: 1, viewMode: 1, dragMode: 'move', autoCropArea: 1, cropBoxMovable: false, cropBoxResizable: false });
-            };
-            reader.readAsDataURL(file);
-        }
-        async function saveCroppedImage() {
-            const canvas = cropper.getCroppedCanvas({ width: 256, height: 256 }); const b64 = canvas.toDataURL('image/jpeg');
-            userData.profileImage = b64; await apiCall('saveUserData', userData);
-            applyProfileImageToUI(b64); closeModal('modal-crop'); showToast("写真を保存しました");
-        }
-        function applyProfileImageToUI(b64) {
-            const img = document.getElementById('profile-img-preview'); const placeholder = document.getElementById('profile-img-placeholder');
-            if (b64) { img.src = b64; img.classList.remove('hidden'); placeholder.classList.add('hidden'); }
-            else { img.classList.add('hidden'); placeholder.classList.remove('hidden'); }
-        }
-        function navigateTo(p) { document.querySelectorAll('.page').forEach(x => x.classList.remove('active')); const t = document.getElementById(`page-${p}`); if (t) t.classList.add('active'); window.scrollTo({ top: 0, behavior: 'smooth' }); updateHeader(p); if (p === 'mypage') refreshAndRenderMyPage(); }
-        function goHome() { navigateTo(isLoggedIn ? 'dashboard' : 'guest-top'); }
-        function updateHeader(p) {
-            const nav = document.getElementById('header-nav');
-            if (isLoggedIn) { nav.innerHTML = `<div onclick="event.stopPropagation(); navigateTo('mypage')" class="flex items-center gap-2 cursor-pointer p-1 pr-3 hover:bg-slate-50 rounded-full transition-all text-left"><span class="text-sm font-bold text-slate-600 text-left">${userData.name}</span><div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 shadow-inner"><i data-lucide="user" class="w-4 h-4 text-left"></i></div></div>`; }
-            else { const label = p === 'login' ? '新規登録' : 'ログイン'; const target = p === 'login' ? 'register' : 'login'; nav.innerHTML = `<button onclick="event.stopPropagation(); navigateTo('${target}')" class="text-xs font-black text-8labo border-2 border-8labo px-4 py-2 rounded-xl hover:bg-orange-50 uppercase tracking-widest text-center text-center text-center text-center text-center">${label}</button>`; }
+        // Badge
+        const badgeColor = rem <= 0 ? 'text-red-500 bg-red-50' : 'text-slate-400 bg-slate-50' ; const badgeText=rem <=0
+            ? '満員' : `残り ${rem} 名`; return ` <div
+            class="bg-white rounded-[2rem] border border-slate-200 p-6 card-hover flex flex-col justify-between h-full shadow-sm text-left event-card">
+            <div class="space-y-4 text-left">
+                <div class="flex justify-between items-center">
+                    <span
+                        class="text-sm font-black bg-orange-50 text-8labo px-3 py-1 rounded-lg tracking-tight">${e.date}</span>
+                    <span class="text-[10px] font-bold ${badgeColor} px-2 py-1 rounded-md text-left">${badgeText}</span>
+                </div>
+                <div class="space-y-1 text-left">
+                    <div class="flex items-start gap-3 justify-between text-left">
+                        <h4 class="font-black text-slate-800 text-lg leading-tight flex-grow break-words text-left">
+                            ${e.title}</h4>
+                        <button onclick="event.stopPropagation(); openDetailModal('${e.id}')"
+                            class="shrink-0 w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-300 hover:text-8labo rounded-full transition-colors relative z-10">
+                            <i data-lucide="info" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div class="price-align-row text-left">
+                        <p class="text-8labo font-black text-xl tracking-tighter text-left">${e.time}</p>
+                        <div class="text-8labo font-black text-sm text-right">
+                            <span>¥${e.personalPrice.toLocaleString()}</span>${cPrice}
+                        </div>
+                    </div>
+                </div>
+                <div
+                    class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100 text-left">
+                    <p class="text-[11px] text-slate-500 font-bold flex items-center gap-1 min-w-0 text-left">
+                        <i data-lucide="map-pin" class="w-3 h-3 text-8labo/50 text-left"></i>
+                        <span class="truncate text-left">${e.location}</span>
+                    </p>
+                    <button onclick="event.stopPropagation(); openLocationModal('${e.id}')"
+                        class="text-[9px] bg-white border border-slate-200 text-slate-400 px-2 py-1 rounded-lg font-black shadow-sm hover:border-8labo relative z-10">MAP</button>
+                </div>
+            </div>
+            <div class="mt-4 text-left">
+                ${buttonHtml}
+            </div>
+            </div>`;
+            }).join('');
+            });
             lucide.createIcons();
-        }
-        // --- 画像処理ロジック ---
-        const DEFAULT_IMAGES = {
-            'ヨガ': 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=600',
-            'ストレッチ': 'https://images.unsplash.com/photo-1552196564-972b3693f00a?q=80&w=600',
-            'トレーニング': 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=600',
-            'ランニング': 'https://images.unsplash.com/photo-1552674605-1e227284b80e?q=80&w=600',
-            'ピラティス': 'https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=600',
-            '朝活': 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=600',
-            '夕活': 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=600',
-            'デフォルト': 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=600',
-            'マップ': 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=600' // シンプルな地図っぽい画像
-        };
-        function resolveEventImage(event) {
-            if (event.img && event.img.startsWith('http')) return event.img;
-            const title = event.title || "";
-            if (title.includes('ヨガ')) return DEFAULT_IMAGES['ヨガ'];
-            if (title.includes('ストレッチ')) return DEFAULT_IMAGES['ストレッチ'];
-            if (title.includes('トレーニング') || title.includes('HIIT')) return DEFAULT_IMAGES['トレーニング'];
-            if (title.includes('ラン') || title.includes('走')) return DEFAULT_IMAGES['ランニング'];
-            if (title.includes('ピラティス')) return DEFAULT_IMAGES['ピラティス'];
-            if (title.includes('朝')) return DEFAULT_IMAGES['朝活'];
-            if (title.includes('夕') || title.includes('夜')) return DEFAULT_IMAGES['夕活'];
-            return DEFAULT_IMAGES['デフォルト'];
-        }
-        function resolveMapImage(url) {
-            if (url && url.startsWith('http')) return url;
-            return DEFAULT_IMAGES['マップ'];
-        }
-        async function renderEvents() {
-            try {
-                // スケルトンローディング表示
-                const grids = [document.getElementById('guest-event-grid'), document.getElementById('member-event-grid')];
-                grids.forEach(g => {
-                    if (g) g.innerHTML = Array(4).fill(0).map(() => `<div class="bg-slate-50 rounded-[2rem] border border-slate-100 p-6 h-64 animate-pulse"></div>`).join('');
-                });
-                const res = await fetchFromGas('getEventsData'); if (!res.success) return;
-                eventsData = res.events; document.getElementById('calendar-iframe').src = res.calendarUrl;
-                grids.forEach((grid, idx) => {
-                    if (!grid) return; const isM = idx === 1;
-                    grid.innerHTML = eventsData.map(e => {
-                        const isB = ordersData.some(o => o.eventId === e.id && o.status !== 'キャンセル');
-                        const rem = e.capacity - e.enrollees;
-                        const cPrice = (e.personalPrice !== e.companionPrice && e.maxAccompaniments > 0) ? `<span class="text-[10px] text-slate-400 font-bold ml-1 text-left">(同伴 ¥${e.companionPrice.toLocaleString()})</span>` : "";
-                        return `
-                        <div class="bg-white rounded-[2rem] border border-slate-200 p-6 card-hover flex flex-col justify-between h-full shadow-sm text-left event-card">
-                            <div class="space-y-4 text-left">
-                                <div class="flex justify-between items-center"><span class="text-sm font-black bg-orange-50 text-8labo px-3 py-1 rounded-lg tracking-tight">${e.date}</span><span class="text-[10px] font-bold ${rem <= 0 ? 'text-red-500 bg-red-50' : 'text-slate-400 bg-slate-50'} px-2 py-1 rounded-md text-left">${rem <= 0 ? '満員' : `残り ${rem} 名`}</span></div>
-                                <div class="space-y-1 text-left">
-                                    <div class="flex items-start gap-3 justify-between text-left">
-                                        <h4 class="font-black text-slate-800 text-lg leading-tight flex-grow break-words text-left text-left">${e.title}</h4>
-                                        <button onclick="event.stopPropagation(); openDetailModal('${e.id}')" class="shrink-0 w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-300 hover:text-8labo rounded-full transition-colors relative z-10"><i data-lucide="info" class="w-4 h-4"></i></button>
-                                    </div>
-                                    <div class="price-align-row text-left"><p class="text-8labo font-black text-xl tracking-tighter text-left text-left">${e.time}</p><div class="text-8labo font-black text-sm text-right text-right"><span>¥${e.personalPrice.toLocaleString()}</span>${cPrice}</div></div>
-                                </div>
-                                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100 text-left">
-                                    <p class="text-[11px] text-slate-500 font-bold flex items-center gap-1 min-w-0 text-left"><i data-lucide="map-pin" class="w-3 h-3 text-8labo/50 text-left text-left"></i> <span class="truncate text-left text-left">${e.location}</span></p>
-                                    <button onclick="event.stopPropagation(); openLocationModal('${e.id}')" class="text-[9px] bg-white border border-slate-200 text-slate-400 px-2 py-1 rounded-lg font-black shadow-sm hover:border-8labo relative z-10">MAP</button>
-                                </div>
-                            </div>
-                            <div class="mt-4 text-left">
-                                ${isM ? (isB ? `<div class="w-full py-4 bg-green-50 text-green-600 rounded-2xl text-sm font-black text-center flex items-center justify-center gap-2 shadow-inner text-center"><i data-lucide="check-circle" class="w-4 h-4 text-center text-center"></i> 予約済み</div>` : `<div class="flex items-center justify-start px-1 mb-2 text-left text-left"><label class="flex items-center gap-2 cursor-pointer group text-left text-left"><input type="checkbox" id="cal-${e.id}" class="w-4 h-4 accent-orange-500 rounded border-slate-300 transition-all text-left text-left relative z-10"><span class="text-[10px] text-slate-400 group-hover:text-8labo text-left text-left">カレンダー追加</span></label></div><button onclick="event.stopPropagation(); confirmAction('${e.id}')" ${rem <= 0 ? 'disabled' : ''} class="w-full py-4 ${rem <= 0 ? 'bg-slate-100 text-slate-300' : 'bg-8labo text-white shadow-lg active:scale-95'} rounded-2xl text-sm font-black transition-all relative z-10">申し込む</button>`) : `<button onclick="event.stopPropagation(); navigateTo('login')" class="w-full py-4 bg-slate-900 text-white rounded-2xl text-sm font-black shadow-lg active:scale-95 text-center text-center relative z-10">ログインして予約</button>`}
-                            </div>
-                        </div>`;
-                    }).join('');
-                });
-                lucide.createIcons();
-            } catch (err) { console.error("Event Fetch Error:", err); }
-        }
-        function openDetailModal(id) {
+            } catch (err) {
+            console.error("Event Rendering Error:", err);
+            }
+            }
+            // Details Logic
+            function openDetailModal(id) {
             selectedEvent = eventsData.find(x => x.id == id);
             if (!selectedEvent) return;
             document.getElementById('detail-title').innerText = selectedEvent.title;
@@ -781,8 +950,8 @@
             document.getElementById('detail-point-text').innerText = `${selectedEvent.selfPoints} pt`;
             document.getElementById('detail-img').src = resolveEventImage(selectedEvent);
             openModal('modal-detail');
-        }
-        function openLocationModal(id) {
+            }
+            function openLocationModal(id) {
             selectedEvent = eventsData.find(x => x.id == id);
             if (!selectedEvent) return;
             document.getElementById('loc-name').innerText = selectedEvent.location;
@@ -790,150 +959,246 @@
             const mapImg = document.getElementById('loc-map-img');
             const mapLink = document.getElementById('loc-map-link');
             mapImg.src = resolveMapImage(selectedEvent.map);
-            mapImg.onerror = function () { this.src = DEFAULT_IMAGES['マップ']; };
             const query = encodeURIComponent(selectedEvent.location + " " + selectedEvent.address);
             mapLink.href = `https://www.google.com/maps/search/?api=1&query=${query}`;
             openModal('modal-location');
-        }
-        function confirmAction(id) {
-            selectedEvent = eventsData.find(x => x.id == id); accompaniments = 0;
+            }
+            // Booking UI Logic
+            function confirmAction(id) {
+            selectedEvent = eventsData.find(x => x.id == id);
+            accompaniments = 0;
             const maxAcc = Number(selectedEvent.maxAccompaniments) || 0;
+            // Toggle Companion Section
             const cs = document.getElementById('companion-section');
             const nh = document.getElementById('no-companion-hint');
             const maxHint = document.getElementById('companion-max-hint');
             if (maxAcc > 0) {
-                if (cs) cs.classList.remove('hidden');
-                if (nh) nh.classList.add('hidden');
-                if (maxHint) maxHint.innerText = `※最大${maxAcc}名まで同伴可能`;
+            if (cs) cs.classList.remove('hidden');
+            if (nh) nh.classList.add('hidden');
+            if (maxHint) maxHint.innerText = `※最大${maxAcc}名まで同伴可能`;
             } else {
-                if (cs) cs.classList.add('hidden');
-                if (nh) nh.classList.remove('hidden');
+            if (cs) cs.classList.add('hidden');
+            if (nh) nh.classList.remove('hidden');
             }
-            document.getElementById('confirm-details').innerHTML = `<p class="font-black text-slate-800 text-sm leading-tight mb-1.5 break-words text-left text-left">${selectedEvent.title}</p><div class="text-[10px] text-slate-400 font-medium leading-tight text-left text-left text-left"><p>${selectedEvent.date} / ${selectedEvent.time}</p><p>場所: ${selectedEvent.location}</p></div>`;
+            document.getElementById('confirm-details').innerHTML = `
+            <p class="font-black text-slate-800 text-sm leading-tight mb-1.5 break-words text-left">
+                ${selectedEvent.title}</p>
+            <div class="text-[10px] text-slate-400 font-medium leading-tight text-left">
+                <p>${selectedEvent.date} / ${selectedEvent.time}</p>
+                <p>場所: ${selectedEvent.location}</p>
+            </div>`;
             const chk = document.getElementById('consent-check');
             if (chk) chk.checked = false;
-            updateCounterUI(); openModal('modal-confirm');
-        }
-        function changeAccompaniments(v) {
+            updateCounterUI();
+            openModal('modal-confirm');
+            }
+            function changeAccompaniments(v) {
             const maxAcc = Number(selectedEvent.maxAccompaniments) || 0;
             const nv = accompaniments + v;
-            if (nv >= 0 && nv <= maxAcc) {
-                accompaniments = nv;
-                updateCounterUI();
-                const el = document.getElementById('accompaniment-count');
-                if (el) {
-                    el.classList.remove('count-change');
-                    void el.offsetWidth; // trigger reflow
-                    el.classList.add('count-change');
-                }
-            }
-        }
-        function updateCounterUI() {
-            document.getElementById('accompaniment-count').innerText = accompaniments;
-            document.getElementById('summary-total-count').innerText = (1 + accompaniments) + "名";
-            const total = selectedEvent.personalPrice + (selectedEvent.companionPrice * accompaniments);
-            document.getElementById('summary-total-price').innerText = total.toLocaleString();
-            if (accompaniments >= 1) {
+            if (nv >= 0 && nv <= maxAcc) { accompaniments=nv; updateCounterUI(); const
+                el=document.getElementById('accompaniment-count'); if (el) { el.classList.remove('count-change'); void
+                el.offsetWidth; el.classList.add('count-change'); } } } function updateCounterUI() {
+                document.getElementById('accompaniment-count').innerText=accompaniments;
+                document.getElementById('summary-total-count').innerText=(1 + accompaniments) + "名" ; const
+                total=selectedEvent.personalPrice + (selectedEvent.companionPrice * accompaniments);
+                document.getElementById('summary-total-price').innerText=total.toLocaleString(); if (accompaniments>= 1)
+                {
                 document.getElementById('companion-warning').classList.remove('hidden');
                 document.getElementById('consent-area').classList.remove('hidden');
-            } else {
+                } else {
                 document.getElementById('companion-warning').classList.add('hidden');
                 document.getElementById('consent-area').classList.add('hidden');
-            }
-            toggleBookingButton();
-        }
-        function toggleBookingButton() { const btn = document.getElementById('btn-final-confirm'); const chk = document.getElementById('consent-check'); if (accompaniments >= 1 && !chk.checked) btn.classList.add('opacity-20', 'pointer-events-none'); else btn.classList.remove('opacity-20', 'pointer-events-none'); }
-        async function handleFinalBooking() {
-            const btn = document.getElementById('btn-final-confirm');
-            btn.classList.add('pointer-events-none', 'opacity-50');
-            const calCheck = document.getElementById(`cal-${selectedEvent.id}`);
-            const needCal = calCheck && calCheck.checked;
-            const req = { userName: userData.name, eventId: selectedEvent.id, accompaniments, needCalendar: needCal, userEmail: userData.email, eventTitle: selectedEvent.title, eventDate: selectedEvent.date, eventTime: selectedEvent.time, eventLocation: selectedEvent.location };
-            await apiCall('bookEvent', req);
-            ordersData.push({ id: `order-${Date.now()}`, eventId: selectedEvent.id, status: '予約済み', accompaniments });
-            userData.attendanceCount = (Number(userData.attendanceCount) || 0) + 1;
-            userData.points = (Number(userData.points) || 0) + (selectedEvent.selfPoints || 0);
-            saveAppToLocal(); closeModal('modal-confirm'); showToast('予約いたしました'); refreshAndRenderMyPage(); renderEvents();
-            setTimeout(() => btn.classList.remove('pointer-events-none', 'opacity-50'), 2000);
-        }
-        async function handleBookingCancel() {
-            const idx = ordersData.findIndex(o => o.id === targetCancelOrderId);
-            if (idx !== -1) {
-                ordersData[idx].status = 'キャンセル';
+                }
+                toggleBookingButton();
+                }
+                function toggleBookingButton() {
+                const btn = document.getElementById('btn-final-confirm');
+                const chk = document.getElementById('consent-check');
+                // 同伴者ありかつ同意なしなら無効
+                if (accompaniments >= 1 && !chk.checked) {
+                btn.classList.add('opacity-20', 'pointer-events-none');
+                } else {
+                btn.classList.remove('opacity-20', 'pointer-events-none');
+                }
+                }
+                // My Page Logic
+                function refreshAndRenderMyPage() {
+                if(!userData) return;
+                const info = getRankInfo(userData.attendanceCount);
+                document.getElementById('profile-name').innerText = userData.name + " 様";
+                document.getElementById('profile-email').innerText = userData.email;
+                document.getElementById('progress-rank-name').innerText = info.name;
+                document.getElementById('progress-sub').innerText = info.nextRank ? `あと${info.remaining}回で
+                ${info.nextRank}` : "最高ランク到達";
+                const circ = 2 * Math.PI * 52;
+                document.getElementById('progress-bar').setAttribute('stroke-dasharray', `${circ * info.progress}
+                ${circ}`);
+                document.getElementById('stat-attendance-count').innerHTML = `${userData.attendanceCount}<span
+                    class="text-sm ml-0.5">回</span>`;
+                document.getElementById('stat-points').innerHTML = `${userData.points.toLocaleString()}<span
+                    class="text-sm ml-0.5 text-center">pt</span>`;
+                applyProfileImageToUI(userData.profileImage);
+                renderBookedEvents();
+                }
+                function renderBookedEvents() {
+                const myo = ordersData.filter(o => o.status !== 'キャンセル');
+                const container = document.getElementById('booked-event-list');
+                if (myo.length === 0) {
+                container.innerHTML = `<div
+                    class="bg-slate-50 border-2 border-dashed border-slate-100 rounded-3xl p-8 text-center text-slate-300 font-bold text-sm">
+                    予約中のプログラムはありません</div>`;
+                return;
+                }
+                container.innerHTML = myo.map(o => {
+                const e = eventsData.find(x => x.id === o.eventId);
+                if (!e) return '';
+                // Date Parsing
+                const month = e.date.split('.')[1] || "--";
+                const day = e.date.split('.')[2] ? e.date.split('.')[2].split(' ')[0] : "--"; // 01.01 (Mon) -> 01
+                return `
+                <div
+                    class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between gap-4 overflow-hidden">
+                    <div class="flex items-center gap-3 min-w-0 flex-grow text-left">
+                        <div
+                            class="bg-orange-50 text-8labo w-12 h-12 rounded-xl flex flex-col items-center justify-center font-black text-[10px] leading-none shrink-0 tracking-tighter text-center">
+                            <span>${month}月</span>
+                            <span class="text-sm mt-0.5 text-center">${day}日</span>
+                        </div>
+                        <div class="min-w-0 flex-grow text-left">
+                            <h4 class="font-bold text-sm text-slate-800 leading-tight break-words text-left">${e.title}
+                            </h4>
+                            <p class="text-[10px] text-slate-400 font-medium mt-1 text-left">@ ${e.location}</p>
+                        </div>
+                    </div>
+                    <button
+                        onclick="event.stopPropagation(); targetCancelOrderId='${o.id}'; selectedEvent = eventsData.find(ev => ev.id == '${o.eventId}'); openModal('modal-cancel');"
+                        class="text-[11px] font-black text-slate-300 hover:text-red-500 uppercase shrink-0 pl-2 transition-colors relative z-10">
+                        取消
+                    </button>
+                </div>`;
+                }).join('');
+                lucide.createIcons();
+                }
+                /* =========================================
+                5. Event Handlers (ユーザー操作)
+                ========================================= */
+                async function handleLoginSubmit() {
+                const email = document.getElementById('login-email').value.trim();
+                const pass = document.getElementById('login-password').value.trim();
+                const res = await apiCall('login', { email, pass });
+                if (res.success) {
+                userData = res.userData;
+                ordersData = res.ordersData || [];
                 saveAppToLocal();
-                closeModal('modal-cancel');
-                showToast('キャンセルしました');
+                isLoggedIn = true;
+                navigateTo('dashboard');
+                showToast("ログインしました");
+                } else {
+                alert(`ログインに失敗しました。\nIDまたはパスワードを確認してください。\nError: ${res.message || "Unknown"}`);
+                }
+                }
+                function handleRegisterSubmit(form) {
+                tempRegisterData = Object.fromEntries(new FormData(form).entries());
+                document.getElementById('reg-conf-email').innerText = tempRegisterData.email;
+                document.getElementById('reg-conf-pass').innerText = tempRegisterData.password;
+                openModal('modal-register-confirm');
+                }
+                async function submitRegistration() {
+                // ローカル初期化
+                userData = tempRegisterData;
+                userData.attendanceCount = 0;
+                userData.points = 0;
+                ordersData = [];
+                closeModal('modal-register-confirm');
+                // GASへ保存
+                const res = await apiCall('saveUserData', userData);
+                if(res.success) {
+                saveAppToLocal();
+                isLoggedIn = true;
+                navigateTo('dashboard');
+                showToast("会員登録が完了しました");
+                } else {
+                alert(`登録に失敗しました。\n通信状況を確認して再試行してください。\nError: ${res.message || "Unknown"}`);
+                }
+                }
+                async function handleFinalBooking() {
+                const btn = document.getElementById('btn-final-confirm');
+                btn.classList.add('pointer-events-none', 'opacity-50');
+                const calCheck = document.getElementById(`cal-${selectedEvent.id}`);
+                const needCal = calCheck && calCheck.checked;
+                const req = {
+                userName: userData.name,
+                eventId: selectedEvent.id,
+                accompaniments,
+                needCalendar: needCal,
+                userEmail: userData.email,
+                eventTitle: selectedEvent.title,
+                eventDate: selectedEvent.date,
+                eventTime: selectedEvent.time,
+                eventLocation: selectedEvent.location
+                };
+                const res = await apiCall('bookEvent', req);
+                if(res.success) {
+                ordersData.push({ id: res.orderId || `order-${Date.now()}`, eventId: selectedEvent.id, status: '予約済み',
+                accompaniments });
+                // ポイント加算(Optimistic)
+                userData.attendanceCount = (Number(userData.attendanceCount) || 0) + 1;
+                userData.points = (Number(userData.points) || 0) + (selectedEvent.selfPoints || 0);
+                saveAppToLocal();
+                closeModal('modal-confirm');
+                showToast('予約いたしました');
                 refreshAndRenderMyPage();
                 renderEvents();
-            }
-            apiCall('cancelBooking', { userName: userData.name, eventId: selectedEvent.id });
-        }
-        function renderBookedEvents() {
-            const myo = ordersData.filter(o => o.status !== 'キャンセル'); const container = document.getElementById('booked-event-list');
-            if (myo.length === 0) { container.innerHTML = `<div class="bg-slate-50 border-2 border-dashed border-slate-100 rounded-3xl p-8 text-center text-slate-300 font-bold text-sm">予約中のプログラムはありません</div>`; return; }
-            container.innerHTML = myo.map(o => {
-                const e = eventsData.find(x => x.id === o.eventId); if (!e) return '';
-                return `<div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between gap-4 overflow-hidden"><div class="flex items-center gap-3 min-w-0 flex-grow text-left text-left"><div class="bg-orange-50 text-8labo w-12 h-12 rounded-xl flex flex-col items-center justify-center font-black text-[10px] leading-none shrink-0 tracking-tighter text-center text-center"><span>${e.date.split('.')[1]}月</span><span class="text-sm mt-0.5 text-center text-center">${e.date.split('.')[2].split(' ')[0]}日</span></div><div class="min-w-0 flex-grow text-left text-left text-left"><h4 class="font-bold text-sm text-slate-800 leading-tight break-words text-left text-left text-left">${e.title}</h4><p class="text-[10px] text-slate-400 font-medium mt-1 text-left text-left text-left">@ ${e.location}</p></div></div><button onclick="event.stopPropagation(); targetCancelOrderId='${o.id}'; selectedEvent = eventsData.find(ev => ev.id == '${o.eventId}'); openModal('modal-cancel');" class="text-[11px] font-black text-slate-300 hover:text-red-500 uppercase shrink-0 pl-2 transition-colors relative z-10">取消</button></div>`;
-            }).join(''); lucide.createIcons();
-        }
-        function refreshAndRenderMyPage() {
-            const info = getRankInfo(userData.attendanceCount); document.getElementById('profile-name').innerText = userData.name + " 様";
-            document.getElementById('profile-email').innerText = userData.email; document.getElementById('progress-rank-name').innerText = info.name;
-            document.getElementById('progress-sub').innerText = info.nextRank ? `あと${info.remaining}回で ${info.nextRank}` : "最高ランク到達";
-            const circ = 2 * Math.PI * 52; document.getElementById('progress-bar').setAttribute('stroke-dasharray', `${circ * info.progress} ${circ}`);
-            document.getElementById('stat-attendance-count').innerHTML = `${userData.attendanceCount}<span class="text-sm ml-0.5">回</span>`;
-            document.getElementById('stat-points').innerHTML = `${userData.points.toLocaleString()}<span class="text-sm ml-0.5 text-center">pt</span>`;
-            applyProfileImageToUI(userData.profileImage); renderBookedEvents();
-        }
-        // --- Utils ---
-        function saveAppToLocal() { localStorage.setItem('bizfit_master_v38', JSON.stringify({ userData, ordersData })); }
-        function loadAppFromLocal() { const saved = localStorage.getItem('bizfit_master_v38'); if (saved) { const p = JSON.parse(saved); userData = p.userData; ordersData = p.ordersData; return true; } return false; }
-        function logout() { isLoggedIn = false; localStorage.removeItem('bizfit_master_v38'); closeModal('modal-logout'); navigateTo('guest-top'); }
-        function devReset() { logout(); location.reload(); }
-        function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.opacity = '1'; setTimeout(() => t.style.opacity = '0', 3000); }
-        function openModal(id) { const m = document.getElementById(id); m.classList.add('active'); m.querySelector('div').classList.remove('scale-95'); }
-        function closeModal(id) { const m = document.getElementById(id); m.querySelector('div').classList.add('scale-95'); setTimeout(() => m.classList.remove('active'), 200); }
-        function togglePassword(id) {
-            const input = document.getElementById(id);
-            const icon = document.getElementById(id + '-icon');
-            if (input.type === 'password') {
+                } else {
+                alert(`予約に失敗しました。\nError: ${res.message || "Unknown"}`);
+                }
+                setTimeout(() => btn.classList.remove('pointer-events-none', 'opacity-50'), 2000);
+                }
+                async function handleBookingCancel() {
+                const idx = ordersData.findIndex(o => o.id === targetCancelOrderId);
+                // Optimistic UI Update
+                if (idx !== -1) {
+                ordersData[idx].status = 'キャンセル';
+                saveAppToLocal();
+                }
+                closeModal('modal-cancel');
+                showToast('キャンセルしました'); // 先に表示
+                refreshAndRenderMyPage();
+                renderEvents();
+                // API Call in background
+                apiCall('cancelBooking', { userName: userData.name, userEmail: userData.email, eventId: selectedEvent.id
+                });
+                }
+                // UI Helpers
+                function togglePassword(id) {
+                const input = document.getElementById(id);
+                const icon = document.getElementById(id + '-icon');
+                if (input.type === 'password') {
                 input.type = 'text';
                 icon.setAttribute('data-lucide', 'eye-off');
-            } else {
+                } else {
                 input.type = 'password';
                 icon.setAttribute('data-lucide', 'eye');
-            }
-            lucide.createIcons();
-        }
-        async function handleLoginSubmit() {
-            const email = document.getElementById('login-email').value.trim();
-            const pass = document.getElementById('login-password').value.trim();
-            const res = await apiCall('login', { email, pass });
-            if (res.success) { userData = res.userData; ordersData = res.ordersData || []; saveAppToLocal(); isLoggedIn = true; navigateTo('dashboard'); }
-            else { alert('ログインに失敗しました'); }
-        }
-        // --- 会員登録フロー変更 (V47) ---
-        function handleRegisterSubmit(form) {
-            tempRegisterData = Object.fromEntries(new FormData(form).entries());
-            document.getElementById('reg-conf-email').innerText = tempRegisterData.email;
-            document.getElementById('reg-conf-pass').innerText = tempRegisterData.password;
-            openModal('modal-register-confirm');
-        }
-        async function submitRegistration() {
-            userData = tempRegisterData;
-            userData.attendanceCount = 0; userData.points = 0; ordersData = [];
-            closeModal('modal-register-confirm');
-            await apiCall('saveUserData', userData);
-            saveAppToLocal(); isLoggedIn = true; navigateTo('dashboard');
-        }
-        window.onload = async () => {
-            // V48: Immediate Render
-            if (loadAppFromLocal()) { isLoggedIn = true; navigateTo('dashboard'); }
-            else { isLoggedIn = false; navigateTo('guest-top'); }
-            lucide.createIcons();
-            // Background Fetch
-            await renderEvents();
-        };
-    </script>
+                }
+                lucide.createIcons();
+                }
+                /* =========================================
+                6. Initialization (初期化)
+                ========================================= */
+                window.onload = async () => {
+                // 1. Local Load & Immediate Render (V48)
+                if (loadAppFromLocal()) {
+                isLoggedIn = true;
+                navigateTo('dashboard');
+                } else {
+                isLoggedIn = false;
+                navigateTo('guest-top');
+                }
+                lucide.createIcons();
+                // 2. Fetch Latest Data (Async)
+                await renderEvents();
+                };
+                // --- EOF ---
+                </script>
 </body>
 </html>
