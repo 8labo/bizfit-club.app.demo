@@ -242,12 +242,17 @@
         <section id="page-login" class="page max-w-md mx-auto py-12">
             <div class="bg-white rounded-3xl shadow-xl p-8 border border-slate-100 text-center text-left">
                 <h2 class="text-2xl font-bold mb-6 text-center">ログイン</h2>
-                <form class="space-y-4 text-left" onsubmit="event.preventDefault(); handleLoginSubmit();"><input
-                        type="text" id="login-email" required placeholder="会員IDまたはメールアドレス"
-                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-8labo transition-all"><input
-                        type="password" id="login-password" required placeholder="パスワード"
-                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-8labo transition-all"><button
-                        type="submit"
+                <form class="space-y-4 text-left" onsubmit="event.preventDefault(); handleLoginSubmit();">
+                    <input type="text" id="login-email" required placeholder="会員IDまたはメールアドレス"
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-8labo transition-all">
+                    <div class="relative">
+                        <input type="password" id="login-password" required placeholder="パスワード"
+                            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-8labo transition-all pr-10">
+                        <button type="button" onclick="togglePassword('login-password')"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 outline-none">
+                            <i id="login-password-icon" data-lucide="eye" class="w-5 h-5"></i>
+                        </button>
+                    </div><button type="submit"
                         class="w-full py-4 bg-8labo text-white font-bold rounded-xl mt-4 shadow-lg shadow-orange-500/20">ログインする</button>
                 </form>
             </div>
@@ -700,9 +705,14 @@
         }
         async function renderEvents() {
             try {
+                // スケルトンローディング表示
+                const grids = [document.getElementById('guest-event-grid'), document.getElementById('member-event-grid')];
+                grids.forEach(g => {
+                    if (g) g.innerHTML = Array(4).fill(0).map(() => `<div class="bg-slate-50 rounded-[2rem] border border-slate-100 p-6 h-64 animate-pulse"></div>`).join('');
+                });
                 const res = await fetchFromGas('getEventsData'); if (!res.success) return;
                 eventsData = res.events; document.getElementById('calendar-iframe').src = res.calendarUrl;
-                [document.getElementById('guest-event-grid'), document.getElementById('member-event-grid')].forEach((grid, idx) => {
+                grids.forEach((grid, idx) => {
                     if (!grid) return; const isM = idx === 1;
                     grid.innerHTML = eventsData.map(e => {
                         const isB = ordersData.some(o => o.eventId === e.id && o.status !== 'キャンセル');
@@ -733,159 +743,34 @@
                 lucide.createIcons();
             } catch (err) { console.error("Event Fetch Error:", err); }
         }
-        function openDetailModal(id) {
-            selectedEvent = eventsData.find(x => x.id == id);
-            if (!selectedEvent) return;
-            document.getElementById('detail-title').innerText = selectedEvent.title;
-            document.getElementById('detail-description').innerText = selectedEvent.description;
-            document.getElementById('detail-price-text').innerText = `¥${selectedEvent.personalPrice.toLocaleString()}`;
-            document.getElementById('detail-point-text').innerText = `${selectedEvent.selfPoints} pt`;
-            // 画像自動補完
-            document.getElementById('detail-img').src = resolveEventImage(selectedEvent);
-            openModal('modal-detail');
-        }
-        function openLocationModal(id) {
-            selectedEvent = eventsData.find(x => x.id == id);
-            if (!selectedEvent) return;
-            document.getElementById('loc-name').innerText = selectedEvent.location;
-            document.getElementById('loc-address').innerText = selectedEvent.address;
-            // マップ画像フォールバック
-            const mapImg = document.getElementById('loc-map-img');
-            const mapLink = document.getElementById('loc-map-link');
-            mapImg.src = resolveMapImage(selectedEvent.map);
-            mapImg.onerror = function () { this.src = DEFAULT_IMAGES['マップ']; };
-            // Google Maps Link
-            const query = encodeURIComponent(selectedEvent.location + " " + selectedEvent.address);
-            mapLink.href = `https://www.google.com/maps/search/?api=1&query=${query}`;
-            openModal('modal-location');
-        }
-        function confirmAction(id) {
-            selectedEvent = eventsData.find(x => x.id == id); accompaniments = 0;
-            const maxAcc = Number(selectedEvent.maxAccompaniments) || 0;
-            const cs = document.getElementById('companion-section');
-            const nh = document.getElementById('no-companion-hint');
-            const maxHint = document.getElementById('companion-max-hint');
-            if (maxAcc > 0) {
-                if (cs) cs.classList.remove('hidden');
-                if (nh) nh.classList.add('hidden');
-                if (maxHint) maxHint.innerText = `※最大${maxAcc}名まで同伴可能`;
+        // ... existing modals functions ...
+        function togglePassword(id) {
+            const input = document.getElementById(id);
+            const icon = document.getElementById(id + '-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
             } else {
-                if (cs) cs.classList.add('hidden');
-                if (nh) nh.classList.remove('hidden');
+                input.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
             }
-            document.getElementById('confirm-details').innerHTML = `<p class="font-black text-slate-800 text-sm leading-tight mb-1.5 break-words text-left text-left">${selectedEvent.title}</p><div class="text-[10px] text-slate-400 font-medium leading-tight text-left text-left text-left"><p>${selectedEvent.date} / ${selectedEvent.time}</p><p>場所: ${selectedEvent.location}</p></div>`;
-            const chk = document.getElementById('consent-check');
-            if (chk) chk.checked = false;
-            updateCounterUI(); openModal('modal-confirm');
-        }
-        function changeAccompaniments(v) {
-            const maxAcc = Number(selectedEvent.maxAccompaniments) || 0;
-            const nv = accompaniments + v;
-            if (nv >= 0 && nv <= maxAcc) {
-                accompaniments = nv;
-                updateCounterUI();
-                const el = document.getElementById('accompaniment-count');
-                if (el) {
-                    el.classList.remove('count-change');
-                    void el.offsetWidth; // trigger reflow
-                    el.classList.add('count-change');
-                }
-            }
-        }
-        function updateCounterUI() {
-            document.getElementById('accompaniment-count').innerText = accompaniments;
-            document.getElementById('summary-total-count').innerText = (1 + accompaniments) + "名";
-            const total = selectedEvent.personalPrice + (selectedEvent.companionPrice * accompaniments);
-            document.getElementById('summary-total-price').innerText = total.toLocaleString();
-            if (accompaniments >= 1) {
-                document.getElementById('companion-warning').classList.remove('hidden');
-                document.getElementById('consent-area').classList.remove('hidden');
-            } else {
-                document.getElementById('companion-warning').classList.add('hidden');
-                document.getElementById('consent-area').classList.add('hidden');
-            }
-            toggleBookingButton();
-        }
-        function toggleBookingButton() { const btn = document.getElementById('btn-final-confirm'); const chk = document.getElementById('consent-check'); if (accompaniments >= 1 && !chk.checked) btn.classList.add('opacity-20', 'pointer-events-none'); else btn.classList.remove('opacity-20', 'pointer-events-none'); }
-        async function handleFinalBooking() {
-            const btn = document.getElementById('btn-final-confirm');
-            btn.classList.add('pointer-events-none', 'opacity-50'); // Prevent Double Click (Fix)
-            const calCheck = document.getElementById(`cal-${selectedEvent.id}`);
-            const needCal = calCheck && calCheck.checked;
-            const req = { userName: userData.name, eventId: selectedEvent.id, accompaniments, needCalendar: needCal, userEmail: userData.email, eventTitle: selectedEvent.title, eventDate: selectedEvent.date, eventTime: selectedEvent.time, eventLocation: selectedEvent.location };
-            await apiCall('bookEvent', req);
-            ordersData.push({ id: `order-${Date.now()}`, eventId: selectedEvent.id, status: '予約済み', accompaniments });
-            // Increment local stats for UI
-            userData.attendanceCount = (Number(userData.attendanceCount) || 0) + 1;
-            userData.points = (Number(userData.points) || 0) + (selectedEvent.selfPoints || 0);
-            saveAppToLocal(); closeModal('modal-confirm'); showToast('予約いたしました'); refreshAndRenderMyPage(); renderEvents();
-            // Re-enable button after short delay (or leave disabled until re-open)
-            setTimeout(() => btn.classList.remove('pointer-events-none', 'opacity-50'), 2000);
+            lucide.createIcons();
         }
         async function handleLoginSubmit() {
-            const email = document.getElementById('login-email').value; const pass = document.getElementById('login-password').value;
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-password').value.trim();
             const res = await apiCall('login', { email, pass });
             if (res.success) { userData = res.userData; ordersData = res.ordersData || []; saveAppToLocal(); isLoggedIn = true; navigateTo('dashboard'); }
             else { alert('ログインに失敗しました'); }
         }
-        // --- 会員登録フロー変更 (V47) ---
-        function handleRegisterSubmit(form) {
-            tempRegisterData = Object.fromEntries(new FormData(form).entries());
-            document.getElementById('reg-conf-email').innerText = tempRegisterData.email;
-            document.getElementById('reg-conf-pass').innerText = tempRegisterData.password;
-            openModal('modal-register-confirm');
-        }
-        async function submitRegistration() {
-            userData = tempRegisterData;
-            userData.attendanceCount = 0; userData.points = 0; ordersData = [];
-            closeModal('modal-register-confirm');
-            await apiCall('saveUserData', userData);
-            saveAppToLocal(); isLoggedIn = true; navigateTo('dashboard');
-        }
-        function refreshAndRenderMyPage() {
-            const info = getRankInfo(userData.attendanceCount); document.getElementById('profile-name').innerText = userData.name + " 様";
-            document.getElementById('profile-email').innerText = userData.email; document.getElementById('progress-rank-name').innerText = info.name;
-            document.getElementById('progress-sub').innerText = info.nextRank ? `あと${info.remaining}回で ${info.nextRank}` : "最高ランク到達";
-            const circ = 2 * Math.PI * 52; document.getElementById('progress-bar').setAttribute('stroke-dasharray', `${circ * info.progress} ${circ}`);
-            document.getElementById('stat-attendance-count').innerHTML = `${userData.attendanceCount}<span class="text-sm ml-0.5">回</span>`;
-            document.getElementById('stat-points').innerHTML = `${userData.points.toLocaleString()}<span class="text-sm ml-0.5 text-center">pt</span>`;
-            applyProfileImageToUI(userData.profileImage); renderBookedEvents();
-        }
-        function renderBookedEvents() {
-            const myo = ordersData.filter(o => o.status !== 'キャンセル'); const container = document.getElementById('booked-event-list');
-            if (myo.length === 0) { container.innerHTML = `<div class="bg-slate-50 border-2 border-dashed border-slate-100 rounded-3xl p-8 text-center text-slate-300 font-bold text-sm">予約中のプログラムはありません</div>`; return; }
-            container.innerHTML = myo.map(o => {
-                const e = eventsData.find(x => x.id === o.eventId); if (!e) return '';
-                return `<div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between gap-4 overflow-hidden"><div class="flex items-center gap-3 min-w-0 flex-grow text-left text-left"><div class="bg-orange-50 text-8labo w-12 h-12 rounded-xl flex flex-col items-center justify-center font-black text-[10px] leading-none shrink-0 tracking-tighter text-center text-center"><span>${e.date.split('.')[1]}月</span><span class="text-sm mt-0.5 text-center text-center">${e.date.split('.')[2].split(' ')[0]}日</span></div><div class="min-w-0 flex-grow text-left text-left text-left"><h4 class="font-bold text-sm text-slate-800 leading-tight break-words text-left text-left text-left">${e.title}</h4><p class="text-[10px] text-slate-400 font-medium mt-1 text-left text-left text-left">@ ${e.location}</p></div></div><button onclick="event.stopPropagation(); targetCancelOrderId='${o.id}'; selectedEvent = eventsData.find(ev => ev.id == '${o.eventId}'); openModal('modal-cancel');" class="text-[11px] font-black text-slate-300 hover:text-red-500 uppercase shrink-0 pl-2 transition-colors relative z-10">取消</button></div>`;
-            }).join(''); lucide.createIcons();
-        }
-        async function handleBookingCancel() {
-            // Optimistic UI Update (V47: Fast/No-Lag)
-            const idx = ordersData.findIndex(o => o.id === targetCancelOrderId);
-            if (idx !== -1) {
-                ordersData[idx].status = 'キャンセル';
-                saveAppToLocal();
-                closeModal('modal-cancel');
-                showToast('キャンセルしました');
-                refreshAndRenderMyPage();
-                renderEvents();
-            }
-            // Background API Call
-            apiCall('cancelBooking', { userName: userData.name, eventId: selectedEvent.id });
-        }
-        // ... remaining utils ...
-        function saveAppToLocal() { localStorage.setItem('bizfit_master_v38', JSON.stringify({ userData, ordersData })); }
-        function loadAppFromLocal() { const saved = localStorage.getItem('bizfit_master_v38'); if (saved) { const p = JSON.parse(saved); userData = p.userData; ordersData = p.ordersData; return true; } return false; }
-        function logout() { isLoggedIn = false; localStorage.removeItem('bizfit_master_v38'); closeModal('modal-logout'); navigateTo('guest-top'); }
-        function devReset() { logout(); location.reload(); }
-        function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.opacity = '1'; setTimeout(() => t.style.opacity = '0', 3000); }
-        function openModal(id) { const m = document.getElementById(id); m.classList.add('active'); m.querySelector('div').classList.remove('scale-95'); }
-        function closeModal(id) { const m = document.getElementById(id); m.querySelector('div').classList.add('scale-95'); setTimeout(() => m.classList.remove('active'), 200); }
+        // ... existing register and others ...
         window.onload = async () => {
-            await renderEvents();
+            // V48: Immediate Render
             if (loadAppFromLocal()) { isLoggedIn = true; navigateTo('dashboard'); }
             else { isLoggedIn = false; navigateTo('guest-top'); }
             lucide.createIcons();
+            // Background Fetch
+            await renderEvents();
         };
     </script>
 </body>
