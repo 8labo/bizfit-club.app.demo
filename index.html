@@ -777,41 +777,72 @@
                 }
                 if (res.syncError) {
                     console.warn("Calendar Sync Error:", res.syncError);
-                    // showToast("⚠️ Calendar Sync Error (Events Loaded)"); // Optional: Uncomment to notify user
                 }
-                eventsData = res.events; document.getElementById('calendar-iframe').src = res.calendarUrl;
+                eventsData = res.events || [];
+                // Safe Calendar Set
+                const calFrame = document.getElementById('calendar-iframe');
+                if (calFrame && res.calendarUrl) {
+                    calFrame.src = res.calendarUrl;
+                }
                 [document.getElementById('guest-event-grid'), document.getElementById('member-event-grid')].forEach((grid, idx) => {
                     if (!grid) return; const isM = idx === 1;
                     grid.innerHTML = eventsData.map(e => {
                         const isB = ordersData.some(o => o.eventId === e.id && o.status !== 'キャンセル');
                         const rem = e.capacity - e.enrollees;
                         const cPrice = (e.personalPrice !== e.companionPrice && e.maxAccompaniments > 0) ? `<span class="text-[10px] text-slate-400 font-bold ml-1 text-left">(同伴 ¥${(e.companionPrice || 0).toLocaleString()})</span>` : "";
-                        // ボタンには物理的最前面設定をインラインで強制適用
                         const zFix = 'position:relative!important;z-index:99999!important;pointer-events:auto!important;cursor:pointer!important;';
+                        const dObj = formatSafeDate(e.date); // Use helper
                         return `
-                         <div class="bg-white rounded-[2rem] border border-slate-200 p-6 card-hover flex flex-col justify-between h-full shadow-sm text-left event-card">
-                             <div class="space-y-4 text-left">
-                                 <div class="flex justify-between items-center"><span class="text-sm font-black bg-orange-50 text-8labo px-3 py-1 rounded-lg tracking-tight">${String(e.date).split(' ')[0]}</span><span class="text-[10px] font-bold ${rem <= 0 ? 'text-red-500 bg-red-50' : 'text-slate-400 bg-slate-50'} px-2 py-1 rounded-md text-left">${rem <= 0 ? '満員' : `残り ${rem} 名`}</span></div>
-                                 <div class="space-y-1 text-left">
-                                     <div class="flex items-start gap-3 justify-between text-left">
-                                         <h4 class="font-black text-slate-800 text-lg leading-tight flex-grow break-words text-left text-left">${e.title}</h4>
-                                         <button onclick="event.stopPropagation(); openDetailModal('${e.id}')" class="shrink-0 w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-300 hover:text-8labo rounded-full transition-colors btn-safe-click"><i data-lucide="info" class="w-4 h-4"></i></button>
-                                     </div>
-                                     <div class="price-align-row text-left"><p class="text-8labo font-black text-xl tracking-tighter text-left text-left">${e.time}</p><div class="text-8labo font-black text-sm text-right text-right"><span>¥${(e.personalPrice || 0).toLocaleString()}</span>${cPrice}</div></div>
-                                 </div>
-                                 <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100 text-left">
-                                     <p class="text-[11px] text-slate-500 font-bold flex items-center gap-1 min-w-0 text-left"><i data-lucide="map-pin" class="w-3 h-3 text-8labo/50 text-left text-left"></i> <span class="truncate text-left text-left">${e.location}</span></p>
-                                     <button onclick="event.stopPropagation(); openLocationModal('${e.id}')" class="text-[9px] bg-white border border-slate-200 text-slate-400 px-2 py-1 rounded-lg font-black shadow-sm hover:border-8labo btn-safe-click">MAP</button>
-                                 </div>
-                             </div>
-                             <div class="mt-4 text-left">
-                                 ${isM ? (isB ? `<div class="w-full py-4 bg-green-50 text-green-600 rounded-2xl text-sm font-black text-center flex items-center justify-center gap-2 shadow-inner text-center"><i data-lucide="check-circle" class="w-4 h-4 text-center text-center"></i> 予約済み</div>` : `<div class="flex items-center justify-start px-1 mb-2 text-left text-left"><label class="flex items-center gap-2 cursor-pointer group text-left text-left"><input type="checkbox" id="cal-${e.id}" class="w-4 h-4 accent-orange-500 rounded border-slate-300 transition-all text-left text-left relative z-10"><span class="text-[10px] text-slate-400 group-hover:text-8labo text-left text-left">カレンダー追加</span></label></div><button onclick="event.stopPropagation(); confirmAction('${e.id}')" ${rem <= 0 ? 'disabled' : ''} class="w-full py-4 ${rem <= 0 ? 'bg-slate-100 text-slate-300' : 'bg-8labo text-white shadow-lg active:scale-95'} rounded-2xl text-sm font-black transition-all btn-safe-click">申し込む</button>`) : `<button onclick="event.stopPropagation(); navigateTo('login')" class="w-full py-4 bg-slate-900 text-white rounded-2xl text-sm font-black shadow-lg active:scale-95 text-center text-center btn-safe-click">ログインして予約</button>`}
-                             </div>
-                         </div>`;
+                        <div class="bg-white rounded-[2rem] border border-slate-200 p-6 card-hover flex flex-col justify-between h-full shadow-sm text-left event-card">
+                            <div class="space-y-4 text-left">
+                                <div class="flex justify-between items-center"><span class="text-sm font-black bg-orange-50 text-8labo px-3 py-1 rounded-lg tracking-tight">${dObj.full}</span><span class="text-[10px] font-bold ${rem <= 0 ? 'text-red-500 bg-red-50' : 'text-slate-400 bg-slate-50'} px-2 py-1 rounded-md text-left">${rem <= 0 ? '満員' : `残り ${rem} 名`}</span></div>
+                                <div class="space-y-1 text-left">
+                                    <div class="flex items-start gap-3 justify-between text-left">
+                                        <h4 class="font-black text-slate-800 text-lg leading-tight flex-grow break-words text-left text-left">${e.title}</h4>
+                                        <button onclick="event.stopPropagation(); openDetailModal('${e.id}')" class="shrink-0 w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-300 hover:text-8labo rounded-full transition-colors btn-safe-click"><i data-lucide="info" class="w-4 h-4"></i></button>
+                                    </div>
+                                    <div class="price-align-row text-left"><p class="text-8labo font-black text-xl tracking-tighter text-left text-left">${e.time}</p><div class="text-8labo font-black text-sm text-right text-right"><span>¥${(e.personalPrice || 0).toLocaleString()}</span>${cPrice}</div></div>
+                                </div>
+                                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100 text-left">
+                                    <p class="text-[11px] text-slate-500 font-bold flex items-center gap-1 min-w-0 text-left"><i data-lucide="map-pin" class="w-3 h-3 text-8labo/50 text-left text-left"></i> <span class="truncate text-left text-left">${e.location}</span></p>
+                                    <button onclick="event.stopPropagation(); openLocationModal('${e.id}')" class="text-[9px] bg-white border border-slate-200 text-slate-400 px-2 py-1 rounded-lg font-black shadow-sm hover:border-8labo btn-safe-click">MAP</button>
+                                </div>
+                            </div>
+                            <div class="mt-4 text-left">
+                                ${isM ? (isB ? `<div class="w-full py-4 bg-green-50 text-green-600 rounded-2xl text-sm font-black text-center flex items-center justify-center gap-2 shadow-inner text-center"><i data-lucide="check-circle" class="w-4 h-4 text-center text-center"></i> 予約済み</div>` : `<div class="flex items-center justify-start px-1 mb-2 text-left text-left"><label class="flex items-center gap-2 cursor-pointer group text-left text-left"><input type="checkbox" id="cal-${e.id}" class="w-4 h-4 accent-orange-500 rounded border-slate-300 transition-all text-left text-left relative z-10"><span class="text-[10px] text-slate-400 group-hover:text-8labo text-left text-left">カレンダー追加</span></label></div><button onclick="event.stopPropagation(); confirmAction('${e.id}')" ${rem <= 0 ? 'disabled' : ''} class="w-full py-4 ${rem <= 0 ? 'bg-slate-100 text-slate-300' : 'bg-8labo text-white shadow-lg active:scale-95'} rounded-2xl text-sm font-black transition-all btn-safe-click">申し込む</button>`) : `<button onclick="event.stopPropagation(); navigateTo('login')" class="w-full py-4 bg-slate-900 text-white rounded-2xl text-sm font-black shadow-lg shadow-slate-900/10 btn-safe-click">今すぐ参加（ログイン）</button>`}
+                            </div>
+                        </div>`;
                     }).join('');
+                    lucide.createIcons();
                 });
-                lucide.createIcons();
-            } catch (err) { console.error("Event Fetch Error:", err); }
+            } catch (err) {
+                console.error("renderEvents Error:", err);
+                showToast("イベント読み込みエラー");
+            }
+        }
+        // Helper to safely parse dates
+        function formatSafeDate(val) {
+            if (!val) return { m: '-', d: '-', full: '-' };
+            let d;
+            // Handle "yyyy.MM.dd" string manually first as it's our standard
+            if (typeof val === 'string' && val.includes('.')) {
+                // Assuming yyyy.MM.dd
+                const parts = val.split('.');
+                if (parts.length >= 3) {
+                    const m = parseInt(parts[1], 10);
+                    const da = parseInt(parts[2].split(' ')[0], 10); // Remove time if present
+                    return { m: m, d: da, full: `${parts[1]}/${parts[2].split(' ')[0]}` };
+                }
+            }
+            // Fallback to Date parse
+            d = new Date(val);
+            if (isNaN(d.getTime())) {
+                // Really fallback
+                return { m: '-', d: '-', full: String(val) };
+            }
+            const m = d.getMonth() + 1;
+            const da = d.getDate();
+            return { m: m, d: da, full: `${m}/${da}` };
         }
         function openDetailModal(id) {
             selectedEvent = eventsData.find(x => x.id == id);
@@ -950,8 +981,9 @@
                 const e = eventsData.find(x => x.id === eid);
                 const o = myo.reverse().find(order => order.eventId === eid);
                 myo.reverse();
+                const dObj = formatSafeDate(e.date);
                 if (!e || !o) return '';
-                return `<div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between gap-4 overflow-hidden"><div class="flex items-center gap-3 min-w-0 flex-grow text-left text-left"><div class="bg-orange-50 text-8labo w-12 h-12 rounded-xl flex flex-col items-center justify-center font-black text-[10px] leading-none shrink-0 tracking-tighter text-center text-center"><span>${String(e.date).split('.')[0]}月</span><span class="text-sm mt-0.5 text-center text-center">${String(e.date).split('.')[1]?.split(' ')[0]}日</span></div><div class="min-w-0 flex-grow text-left text-left text-left"><h4 class="font-bold text-sm text-slate-800 leading-tight break-words text-left text-left text-left">${e.title}</h4><p class="text-[10px] text-slate-400 font-medium mt-1 text-left text-left text-left">@ ${e.location}</p></div></div><button onclick="event.stopPropagation(); targetCancelOrderId='${o.id}'; selectedEvent = eventsData.find(ev => ev.id == '${o.eventId}'); openCancelModal();" class="text-[11px] font-black text-slate-300 hover:text-red-500 uppercase shrink-0 pl-2 transition-colors btn-safe-click">取消</button></div>`;
+                return `<div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between gap-4 overflow-hidden"><div class="flex items-center gap-3 min-w-0 flex-grow text-left text-left"><div class="bg-orange-50 text-8labo w-12 h-12 rounded-xl flex flex-col items-center justify-center font-black text-[10px] leading-none shrink-0 tracking-tighter text-center text-center"><span>${dObj.m}月</span><span class="text-sm mt-0.5 text-center text-center">${dObj.d}日</span></div><div class="min-w-0 flex-grow text-left text-left text-left"><h4 class="font-bold text-sm text-slate-800 leading-tight break-words text-left text-left text-left">${e.title}</h4><p class="text-[10px] text-slate-400 font-medium mt-1 text-left text-left text-left">@ ${e.location}</p></div></div><button onclick="event.stopPropagation(); targetCancelOrderId='${o.id}'; selectedEvent = eventsData.find(ev => ev.id == '${o.eventId}'); openCancelModal();" class="text-[11px] font-black text-slate-300 hover:text-red-500 uppercase shrink-0 pl-2 transition-colors btn-safe-click">取消</button></div>`;
             }).join(''); lucide.createIcons();
         }
         function openCancelModal() {
