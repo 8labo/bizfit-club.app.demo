@@ -686,7 +686,7 @@
     </div>
     <script>
         // --- 1. GAS API 連携設定 (必ずデプロイ後のURLに書き換えてください) ---
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx4jvod2epxmTVqJLS-5QGbD6GzJZYW90Fa7cRb9QCGm7PPfi4_c670zbdqHYvSFrSp/exec";
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxVVTtm7KaklQJQc1rPoG3SwxZDWMni_J9q_A3v_3nVfKcbTDNDpfGs4pSWKMqGeDBm3g/exec";
         let isLoggedIn = false; let userData = null; let eventsData = []; let ordersData = []; let accompaniments = 0; let selectedEvent = null; let cropper = null; let targetCancelOrderId = null;
         async function apiCall(action, data = {}) {
             try { const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action, ...data }) }); return await response.json(); }
@@ -858,6 +858,15 @@
             document.getElementById('detail-description').innerText = selectedEvent.description;
             document.getElementById('detail-price-text').innerText = `¥${selectedEvent.personalPrice.toLocaleString()}`;
             document.getElementById('detail-point-text').innerText = `${selectedEvent.selfPoints} pt`;
+            // 備考欄の制御
+            const notesArea = document.getElementById('detail-notes-area');
+            const notesText = document.getElementById('detail-notes');
+            if (selectedEvent.notes) {
+                notesText.innerText = selectedEvent.notes;
+                notesArea.classList.remove('hidden');
+            } else {
+                notesArea.classList.add('hidden');
+            }
             document.getElementById('detail-img').src = resolveEventImage(selectedEvent);
             openModal('modal-detail');
         }
