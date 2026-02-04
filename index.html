@@ -414,14 +414,14 @@
                             </div>
                             <div class="flex gap-4 w-full md:w-auto text-left">
                                 <div
-                                    class="flex-1 text-center bg-slate-50 px-5 py-4 rounded-[2rem] border border-slate-100 shadow-inner min-w-[130px]">
+                                    class="flex-1 text-center bg-slate-50 px-3 py-2 rounded-[2rem] border border-slate-100 shadow-inner min-w-[100px]">
                                     <span
                                         class="block text-[10px] text-slate-400 font-black mb-1 uppercase tracking-widest text-center">参加回数</span><span
                                         class="text-4xl font-black text-8labo" id="stat-attendance-count">0<span
                                             class="text-sm ml-0.5">回</span></span>
                                 </div>
                                 <div
-                                    class="flex-1 text-center bg-slate-50 px-5 py-4 rounded-[2rem] border border-slate-100 shadow-inner min-w-[130px] text-center">
+                                    class="flex-1 text-center bg-slate-50 px-3 py-2 rounded-[2rem] border border-slate-100 shadow-inner min-w-[100px]">
                                     <span
                                         class="block text-[10px] text-slate-400 font-black mb-1 uppercase tracking-widest text-center">累計ポイント</span><span
                                         class="text-4xl font-black text-slate-700 text-center" id="stat-points">0<span
@@ -581,6 +581,8 @@
                 <i data-lucide="alert-circle" class="w-8 h-8"></i>
             </div>
             <h3 class="text-xl font-black mb-2 text-slate-800 text-center text-center">予約をキャンセル</h3>
+            <div id="cancel-event-details" class="bg-slate-50 p-4 rounded-xl mb-4 text-left border border-slate-100">
+            </div>
             <p class="text-sm text-slate-400 mb-8">一度キャンセルすると戻せません。</p>
             <div class="flex gap-3"><button onclick="closeModal('modal-cancel')"
                     class="flex-1 py-4 border border-slate-200 rounded-2xl font-bold text-center">戻る</button><button
@@ -696,7 +698,6 @@
         }
         // --- 画像処理ロジック ---
         const DEFAULT_IMAGES = {
-            'map': 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=600',
             'yoga': 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=600',
             'stretch': 'https://images.unsplash.com/photo-1552196564-972b3693f00a?q=80&w=600',
             'training': 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=600',
@@ -704,19 +705,20 @@
             'pilates': 'https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=600',
             'morning': 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=600',
             'night': 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=600',
-            'default': 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=600'
+            'default': 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=600',
+            'map': 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=600' // シンプルな地図っぽい画像
         };
         function resolveEventImage(event) {
             if (event.img && event.img.startsWith('http')) return event.img;
-            const title = (event.title || "").toLowerCase();
-            const desc = (event.description || "").toLowerCase();
-            if (title.includes('ヨガ') || title.includes('yoga') || desc.includes('ヨガ')) return DEFAULT_IMAGES['yoga'];
-            if (title.includes('ストレッチ') || desc.includes('ストレッチ')) return DEFAULT_IMAGES['stretch'];
-            if (title.includes('トレーニング') || title.includes('hiit') || title.includes('筋トレ')) return DEFAULT_IMAGES['training'];
-            if (title.includes('ラン') || title.includes('走') || title.includes('マラソン')) return DEFAULT_IMAGES['run'];
-            if (title.includes('ピラティス')) return DEFAULT_IMAGES['pilates'];
-            if (title.includes('朝') || title.includes('morning')) return DEFAULT_IMAGES['morning'];
-            if (title.includes('夕') || title.includes('夜') || title.includes('night')) return DEFAULT_IMAGES['night'];
+            // タイトルと説明文を小文字にして結合し、検索しやすくする
+            const text = ((event.title || "") + " " + (event.description || "")).toLowerCase();
+            if (text.includes('ヨガ') || text.includes('yoga')) return DEFAULT_IMAGES['yoga'];
+            if (text.includes('ストレッチ') || text.includes('stretch')) return DEFAULT_IMAGES['stretch'];
+            if (text.includes('ピラティス') || text.includes('pilates')) return DEFAULT_IMAGES['pilates'];
+            if (text.includes('ラン') || text.includes('走') || text.includes('run') || text.includes('marathon')) return DEFAULT_IMAGES['run'];
+            if (text.includes('トレーニング') || text.includes('筋トレ') || text.includes('hiit') || text.includes('training') || text.includes('workout') || text.includes('ジム')) return DEFAULT_IMAGES['training'];
+            if (text.includes('朝') || text.includes('morning')) return DEFAULT_IMAGES['morning'];
+            if (text.includes('夕') || text.includes('夜') || text.includes('night') || text.includes('evening')) return DEFAULT_IMAGES['night'];
             return DEFAULT_IMAGES['default'];
         }
         function resolveMapImage(url) {
@@ -750,7 +752,9 @@
                                  </div>
                              </div>
                              <div class="mt-4 text-left">
-                                 ${isM ? (isB ? `<div class="w-full py-4 bg-green-50 text-green-600 rounded-2xl text-sm font-black text-center flex items-center justify-center gap-2 shadow-inner text-center"><i data-lucide="check-circle" class="w-4 h-4 text-center text-center"></i> 予約済み</div>` : `<div class="flex items-center justify-start px-1 mb-2 text-left text-left"><label class="flex items-center gap-2 cursor-pointer group text-left text-left"><input type="checkbox" id="cal-${e.id}" class="w-4 h-4 accent-orange-500 rounded border-slate-300 transition-all text-left text-left relative z-10"><span class="text-[10px] text-slate-400 group-hover:text-8labo text-left text-left">カレンダー追加</span></label></div><button onclick="event.stopPropagation(); confirmAction('${e.id}')" ${rem <= 0 ? 'disabled' : ''} class="w-full py-4 ${rem <= 0 ? 'bg-slate-100 text-slate-300' : 'bg-8labo text-white shadow-lg active:scale-95'} rounded-2xl text-sm font-black transition-all relative z-10">申し込む</button>`) : `<button onclick="event.stopPropagation(); navigateTo('login')" class="w-full py-4 bg-slate-900 text-white rounded-2xl text-sm font-black shadow-lg active:scale-95 text-center text-center relative z-10">ログインして予約</button>`}
+                                 ${isM ? (isB ? `<div class="w-full py-4 bg-green-50 text-green-600 rounded-2xl text-sm font-black text-center flex items-center justify-center gap-2 shadow-inner text-center"><i data-lucide="check-circle" class="w-4 h-4 text-center text-center"></i> 予約済み</div>` : `<label class="flex items-center gap-2 cursor-pointer group text-left text-left"><input type="checkbox"                        class="w-4 h-4 accent-orange-500 rounded border-slate-300 transition-all text-left text-left"><span
+                        class="text-xs font-bold text-slate-600 group-hover:text-8labo text-left text-left">同伴者について理解しました</span></label>
+            </div><button onclick="event.stopPropagation(); confirmAction('${e.id}')" ${rem <= 0 ? 'disabled' : ''} class="w-full py-4 ${rem <= 0 ? 'bg-slate-100 text-slate-300' : 'bg-8labo text-white shadow-lg active:scale-95'} rounded-2xl text-sm font-black transition-all relative z-10">申し込む</button>`) : `<button onclick="event.stopPropagation(); navigateTo('login')" class="w-full py-4 bg-slate-900 text-white rounded-2xl text-sm font-black shadow-lg active:scale-95 text-center text-center relative z-10">ログインして予約</button>`}
                              </div>
                          </div>`;
                     }).join('');
@@ -896,8 +900,13 @@
                 const o = myo.reverse().find(order => order.eventId === eid);
                 myo.reverse();
                 if (!e || !o) return '';
-                return `<div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between gap-4 overflow-hidden"><div class="flex items-center gap-3 min-w-0 flex-grow text-left text-left"><div class="bg-orange-50 text-8labo w-12 h-12 rounded-xl flex flex-col items-center justify-center font-black text-[10px] leading-none shrink-0 tracking-tighter text-center text-center"><span>${e.date.split('.')[1]}月</span><span class="text-sm mt-0.5 text-center text-center">${e.date.split('.')[2].split(' ')[0]}日</span></div><div class="min-w-0 flex-grow text-left text-left text-left"><h4 class="font-bold text-sm text-slate-800 leading-tight break-words text-left text-left text-left">${e.title}</h4><p class="text-[10px] text-slate-400 font-medium mt-1 text-left text-left text-left">@ ${e.location}</p></div></div><button onclick="event.stopPropagation(); targetCancelOrderId='${o.id}'; selectedEvent = eventsData.find(ev => ev.id == '${o.eventId}'); openModal('modal-cancel');" class="text-[11px] font-black text-slate-300 hover:text-red-500 uppercase shrink-0 pl-2 transition-colors relative z-10">取消</button></div>`;
+                return `<div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between gap-4 overflow-hidden"><div class="flex items-center gap-3 min-w-0 flex-grow text-left text-left"><div class="bg-orange-50 text-8labo w-12 h-12 rounded-xl flex flex-col items-center justify-center font-black text-[10px] leading-none shrink-0 tracking-tighter text-center text-center"><span>${e.date.split('.')[1]}月</span><span class="text-sm mt-0.5 text-center text-center">${e.date.split('.')[2].split(' ')[0]}日</span></div><div class="min-w-0 flex-grow text-left text-left text-left"><h4 class="font-bold text-sm text-slate-800 leading-tight break-words text-left text-left text-left">${e.title}</h4><p class="text-[10px] text-slate-400 font-medium mt-1 text-left text-left text-left">@ ${e.location}</p></div></div><button onclick="event.stopPropagation(); targetCancelOrderId='${o.id}'; selectedEvent = eventsData.find(ev => ev.id == '${o.eventId}'); openCancelModal();" class="text-[11px] font-black text-slate-300 hover:text-red-500 uppercase shrink-0 pl-2 transition-colors relative z-10">取消</button></div>`;
             }).join(''); lucide.createIcons();
+        }
+        function openCancelModal() {
+            if (!selectedEvent) return;
+            document.getElementById('cancel-event-details').innerHTML = `<p class="font-black text-slate-800 text-sm leading-tight mb-1 break-words text-left text-left">${selectedEvent.title}</p><p class="text-xs text-slate-500 font-bold leading-tight text-left text-left">${selectedEvent.date} / ${selectedEvent.time}</p>`;
+            openModal('modal-cancel');
         }
         async function handleBookingCancel() {
             const btn = document.querySelector('#modal-cancel button:last-child');
