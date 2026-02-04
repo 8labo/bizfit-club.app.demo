@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BizFitクラブ</title>
+    <title>BizFitクラブ | 8LABO プロトタイプ V46</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap"
@@ -802,7 +802,7 @@
                         return `
                         <div class="bg-white rounded-[2rem] border border-slate-200 p-6 card-hover flex flex-col justify-between h-full shadow-sm text-left event-card">
                             <div class="space-y-4 text-left">
-                                <div class="flex justify-between items-center"><span class="text-sm font-black bg-orange-50 text-8labo px-3 py-1 rounded-lg tracking-tight">${dObj.full}</span><span class="text-[10px] font-bold ${rem <= 0 ? 'text-red-500 bg-red-50' : 'text-slate-400 bg-slate-50'} px-2 py-1 rounded-md text-left">${rem <= 0 ? '満員' : `残り ${rem} 名`}</span></div>
+                                <div class="flex justify-between items-center"><span class="text-sm font-black bg-orange-50 text-8labo px-3 py-1 rounded-lg tracking-tight">${e.date}</span><span class="text-[10px] font-bold ${rem <= 0 ? 'text-red-500 bg-red-50' : 'text-slate-400 bg-slate-50'} px-2 py-1 rounded-md text-left">${rem <= 0 ? '満員' : `残り ${rem} 名`}</span></div>
                                 <div class="space-y-1 text-left">
                                     <div class="flex items-start gap-3 justify-between text-left">
                                         <h4 class="font-black text-slate-800 text-lg leading-tight flex-grow break-words text-left text-left">${e.title}</h4>
