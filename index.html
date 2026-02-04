@@ -3,184 +3,932 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BizFitクラブ | 8LABO</title>
+    <title>BizFitクラブ | 8LABO プロトタイプ V46</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap"
+        rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Cropper.js -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
-        :root { --8labo-orange: #F39800; }
-        body { font-family: 'Noto Sans JP', sans-serif; background-color: #f8fafc; }
-        .bg-8labo { background-color: var(--8labo-orange); }
-        .text-8labo { color: var(--8labo-orange); }
-        .page { display: none; }
-        .page.active { display: block; }
-        
-        /* 🔥 ボタン動作復旧のための重要設定 */
-        .btn-safe-click {
-            position: relative !important;
-            z-index: 99999 !important;
-            pointer-events: auto !important;
+        :root {
+            --8labo-orange: #F39800;
         }
-        .event-card { pointer-events: none; }
-        .event-card > * { pointer-events: auto; }
-
-        .progress-ring { transform: rotate(-90deg); }
-        .progress-ring circle { fill: transparent; stroke-width: 12; transition: stroke-dasharray 0.8s ease; }
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100000; align-items: center; justify-content: center; }
-        .modal-overlay.active { display: flex; }
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .text-8labo {
+            color: var(--8labo-orange);
+        }
+        .bg-8labo {
+            background-color: var(--8labo-orange);
+        }
+        .border-8labo {
+            border-color: var(--8labo-orange);
+        }
+        .page {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .page.active {
+            display: block;
+            opacity: 1;
+        }
+        .event-card {
+            isolation: isolate;
+            position: relative;
+        }
+        /* ユーザー指示により、クリック判定に影響する浮き上がりエフェクトを削除 */
+        .card-hover {
+            /* transition: transform 0.2s ease-out, box-shadow 0.2s ease-out; */
+        }
+        /* 
+         * 浮き上がり（transform）がクリックを阻害するため削除しました。
+         */
+        /* 
+         * 以前の強引なz-index指定（.btn-safe-click等）は削除しました。
+         * これにより自然な重なり順で動作し、副作用を防ぎます。
+         */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 200000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.active {
+            display: flex !important;
+        }
+        .price-align-row {
+            display: flex !important;
+            align-items: baseline !important;
+            justify-content: space-between;
+            width: 100%;
+        }
+        .fade-in-ui {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        /* 円形進捗インジケーター */
+        .progress-wrap {
+            width: 150px;
+            height: 150px;
+            position: relative;
+            display: grid;
+            place-items: center;
+            margin: 0 auto;
+        }
+        .progress-center {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .progress-center .main {
+            font-size: 1.3rem;
+            font-weight: 900;
+            color: #0f172a;
+        }
+        .progress-center .sub {
+            margin-top: .4rem;
+            font-size: .6rem;
+            font-weight: 800;
+            color: #94a3b8;
+        }
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        .progress-ring circle {
+            fill: transparent;
+            stroke-width: 10;
+            transition: stroke-dasharray 0.8s ease-out;
+        }
+        .progress-ring .bg {
+            stroke: #f1f5f9;
+        }
+        .progress-ring .bar {
+            stroke: var(--8labo-orange);
+            stroke-linecap: round;
+        }
+        .profile-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            padding: .2rem .75rem;
+            border-radius: 999px;
+            font-weight: 900;
+            font-size: 10px;
+            background: rgba(255, 255, 255, .8);
+            border: 1px solid rgba(226, 232, 240, .9);
+        }
+        .profile-badge.paid {
+            color: #b45309;
+            border-color: rgba(243, 152, 0, 0.4);
+            background: rgba(255, 251, 235, 0.9);
+        }
+        .mypage-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        @media (min-width: 768px) {
+            .mypage-grid {
+                grid-template-columns: 1fr 1.2fr;
+                align-items: center;
+            }
+        }
+        .calendar-container {
+            width: 100%;
+            height: 450px;
+            border-radius: 2rem;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        header {
+            z-index: 100000 !important;
+            background-color: #ffffff !important;
+            position: sticky;
+            top: 0;
+        }
+        .cropper-container {
+            max-height: 300px;
+            width: 100%;
+            background-color: #000;
+            overflow: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        html {
+            scroll-padding-top: 72px;
+        }
+        .count-change {
+            animation: scale-pulse 0.2s ease-out;
+        }
+        @keyframes scale-pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #ffffff;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
-<body>
-    <header class="bg-white border-b sticky top-0 z-[50000] p-4">
-        <div class="max-w-5xl mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-2 cursor-pointer" onclick="goHome()">
-                <div class="w-8 h-8 bg-8labo rounded-lg flex items-center justify-center text-white font-bold">8</div>
-                <h1 class="font-bold text-xl">BizFit<span class="text-8labo">クラブ</span></h1>
+<body class="text-slate-800 text-left">
+    <!-- ヘッダー -->
+    <header class="border-b border-slate-200 shadow-sm">
+        <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="event.stopPropagation(); goHome()">
+                <div
+                    class="w-8 h-8 bg-8labo rounded-lg flex items-center justify-center text-white font-bold shadow-sm">
+                    8</div>
+                <h1 class="font-bold text-xl tracking-tighter text-slate-800">BizFit<span class="text-8labo">クラブ</span>
+                </h1>
             </div>
-            <div id="header-nav"></div>
+            <div id="header-nav" class="flex items-center"></div>
         </div>
     </header>
-
-    <main class="max-w-5xl mx-auto p-4">
-        <section id="page-guest-top" class="page space-y-8">
-            <div class="text-center py-12 space-y-4">
-                <h2 class="text-4xl font-black">運動を習慣に、<br><span class="text-8labo">地域を笑顔に。</span></h2>
-                <button onclick="navigateTo('login')" class="bg-8labo text-white px-8 py-3 rounded-xl font-bold">ログイン</button>
+    <main class="max-w-5xl mx-auto px-4 py-4 min-h-[calc(100vh-14rem)]">
+        <!-- 1. ゲストトップ -->
+        <section id="page-guest-top" class="page space-y-10">
+            <div class="text-center py-10 md:py-16 space-y-6">
+                <div
+                    class="inline-block px-4 py-1 bg-orange-50 text-8labo rounded-full text-[10px] font-black tracking-widest uppercase mx-auto">
+                    The Mission</div>
+                <h2 class="text-4xl md:text-6xl font-black leading-tight text-slate-900 text-center">運動を習慣に、<br><span
+                        class="text-8labo">地域を笑顔に。</span></h2>
+                <div class="pt-4 flex flex-col items-center gap-4">
+                    <button onclick="navigateTo('login')"
+                        class="w-full max-w-[280px] py-4 bg-8labo text-white font-bold rounded-2xl shadow-lg">ログイン</button>
+                    <button onclick="navigateTo('register')"
+                        class="text-sm font-bold text-slate-400 hover:text-8labo">初めての方はこちら（新規会員登録）</button>
+                </div>
             </div>
-            <div id="guest-event-grid" class="grid md:grid-cols-2 gap-6"></div>
+            <div class="space-y-6">
+                <h3 class="text-2xl font-black flex items-center gap-2 px-1 text-slate-800"><i data-lucide="sparkles"
+                        class="text-8labo"></i>開催予定のイベント</h3>
+                <div id="guest-event-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left"></div>
+            </div>
         </section>
-
+        <!-- 2. ログイン -->
         <section id="page-login" class="page max-w-md mx-auto py-12">
-            <div class="bg-white p-8 rounded-3xl shadow-xl">
+            <div class="bg-white rounded-3xl shadow-xl p-8 border border-slate-100 text-center text-left">
                 <h2 class="text-2xl font-bold mb-6 text-center">ログイン</h2>
-                <form onsubmit="event.preventDefault(); handleLoginSubmit();" class="space-y-4">
-                    <input type="text" id="login-email" placeholder="IDまたはメールアドレス" class="w-full p-3 border rounded-xl">
-                    <input type="password" id="login-password" placeholder="パスワード" class="w-full p-3 border rounded-xl">
-                    <button class="w-full py-4 bg-8labo text-white font-bold rounded-xl shadow-lg">ログインする</button>
+                <form class="space-y-4 text-left" onsubmit="event.preventDefault(); handleLoginSubmit();"><input
+                        type="text" id="login-email" required placeholder="会員IDまたはメールアドレス"
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-8labo transition-all">
+                    <div class="relative">
+                        <input type="password" id="login-password" required placeholder="パスワード"
+                            class="w-full px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl focus:border-8labo transition-all">
+                        <button type="button" onclick="togglePassword('login-password', this)"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-8labo">
+                            <i data-lucide="eye" class="w-5 h-5"></i>
+                        </button>
+                    </div><button type="submit"
+                        class="w-full py-4 bg-8labo text-white font-bold rounded-xl mt-4 shadow-lg shadow-orange-500/20">ログインする</button>
                 </form>
             </div>
         </section>
-
-        <section id="page-dashboard" class="page space-y-8">
-            <h3 class="text-xl font-black flex items-center gap-2"><i data-lucide="calendar"></i> 予約可能プログラム</h3>
-            <div id="member-event-grid" class="grid md:grid-cols-2 gap-6"></div>
-            <div class="calendar-container h-[450px] bg-white rounded-3xl overflow-hidden border">
-                <iframe id="calendar-iframe" src="" width="100%" height="100%" frameborder="0"></iframe>
+        <!-- 3. 新規登録 (UI改善・縦並び版) -->
+        <section id="page-register" class="page max-w-xl mx-auto py-2">
+            <div class="bg-white rounded-3xl shadow-xl px-8 py-6 border border-slate-100 text-center text-left">
+                <h2 class="text-xl font-bold mb-5 text-center">新規会員登録</h2>
+                <form class="space-y-3 text-left" onsubmit="event.preventDefault(); handleRegisterSubmit(this);">
+                    <input type="text" name="name" required placeholder="氏名"
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all">
+                    <input type="text" name="kana" required placeholder="ふりがな"
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all">
+                    <input type="email" name="email" required placeholder="メールアドレス"
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all">
+                    <div class="relative">
+                        <input type="password" id="reg-password" name="password" required pattern="[a-zA-Z0-9]{6,12}"
+                            placeholder="パスワード(半角英数字6-12桁)"
+                            class="w-full px-4 py-3 pr-10 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all">
+                        <button type="button" onclick="togglePassword('reg-password', this)"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-8labo">
+                            <i data-lucide="eye" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3"><select name="age" required
+                            class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-slate-600">
+                            <option value="">年代を選択</option>
+                            <option>10代</option>
+                            <option>20代</option>
+                            <option>30代</option>
+                            <option>40代</option>
+                            <option>50代</option>
+                            <option>60代以上</option>
+                        </select><select name="gender" required
+                            class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-slate-600">
+                            <option value="">性別を選択</option>
+                            <option>男性</option>
+                            <option>女性</option>
+                            <option>回答しない</option>
+                        </select></div>
+                    <select name="industry" required
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-slate-600">
+                        <option value="">業種を選択</option>
+                        <option>製造</option>
+                        <option>建設</option>
+                        <option>IT</option>
+                        <option>医療</option>
+                        <option>教育</option>
+                        <option>飲食</option>
+                        <option>自営業</option>
+                        <option>その他</option>
+                    </select>
+                    <select name="purpose" required
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-slate-600">
+                        <option value="">参加目的を選択</option>
+                        <option>運動不足解消</option>
+                        <option>ストレス発散</option>
+                        <option>ビジネス交流</option>
+                        <option>パフォーマンス向上</option>
+                        <option>その他</option>
+                    </select>
+                    <button type="submit"
+                        class="w-full py-4 bg-8labo text-white font-bold rounded-xl mt-3 shadow-lg shadow-orange-500/30">登録を完了してはじめる</button>
+                </form>
             </div>
         </section>
-
-        <section id="page-mypage" class="page space-y-6">
-            <button onclick="navigateTo('dashboard')" class="text-slate-400 font-bold flex items-center"><i data-lucide="chevron-left"></i> 戻る</button>
-            <div class="bg-white p-8 rounded-[3rem] shadow-sm border flex flex-col md:flex-row items-center gap-8">
-                <div class="relative cursor-pointer" onclick="document.getElementById('photo-input').click()">
-                    <div class="w-32 h-32 rounded-[2rem] overflow-hidden border-4 border-white shadow-lg">
-                        <img id="my-profile-img" src="" class="w-full h-full object-cover">
-                    </div>
-                    <div class="absolute bottom-0 right-0 bg-8labo text-white p-2 rounded-full border-2 border-white"><i data-lucide="camera" class="w-4 h-4"></i></div>
-                    <input type="file" id="photo-input" class="hidden" accept="image/*" onchange="handlePhotoChange(this)">
+        <!-- 4. 会員ダッシュボード -->
+        <section id="page-dashboard" class="page space-y-8 text-left">
+            <div class="space-y-6">
+                <div class="flex items-center justify-between px-1">
+                    <h3 class="text-2xl font-black flex items-center gap-2 text-slate-800"><i
+                            data-lucide="calendar-check" class="text-8labo"></i>予約可能プログラム</h3><button
+                        onclick="devReset()"
+                        class="text-[9px] bg-slate-200 text-slate-500 px-2 py-1 rounded font-bold">Dev Reset</button>
                 </div>
-                <div class="text-center md:text-left flex-grow">
-                    <h3 id="my-name" class="text-3xl font-black">---</h3>
-                    <p id="my-email" class="text-slate-400">---</p>
-                </div>
-                <div class="relative w-40 h-40 flex items-center justify-center">
-                    <svg class="progress-ring" width="160" height="160"><circle cx="80" cy="80" r="70" stroke="#f1f5f9"/><circle id="prog-bar" cx="80" cy="80" r="70" stroke="#F39800" stroke-dasharray="0 440"/></svg>
-                    <div class="absolute text-center">
-                        <div id="my-rank" class="text-xl font-black text-8labo">RANK</div>
-                        <div id="my-next" class="text-[10px] text-slate-400 font-bold">NEXT...</div>
-                    </div>
+                <div id="member-event-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left"></div>
+            </div>
+            <div class="space-y-4 px-1 text-left">
+                <h3 class="text-xl font-black flex items-center gap-2 text-slate-800"><i data-lucide="calendar"
+                        class="text-8labo"></i>公式スケジュール</h3>
+                <div class="calendar-container"><iframe id="calendar-iframe" src="" style="border: 0" width="100%"
+                        height="450" frameborder="0" scrolling="no"></iframe></div>
+            </div>
+            <div class="space-y-4 px-1 text-left">
+                <h3 class="text-xl font-black flex items-center gap-2 text-slate-800"><i data-lucide="backpack"
+                        class="text-8labo"></i>持ち物・注意事項</h3>
+                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                    <ul class="list-disc list-inside space-y-2 text-sm text-slate-600 font-medium">
+                        <li>動きやすい服装（Tシャツ、ハーフパンツ、レギンスなど）</li>
+                        <li>室内シューズ（土足厳禁のエリアがあります）</li>
+                        <li>汗拭きタオル</li>
+                        <li>水分補給用の飲み物</li>
+                        <li><span class="text-8labo font-bold">※</span> シャワールーム完備（アメニティあり）</li>
+                    </ul>
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-white p-6 rounded-3xl text-center border">
-                    <div class="text-[10px] text-slate-400 font-black mb-1">参加回数</div>
-                    <div id="my-count" class="text-3xl font-black">0<span class="text-sm ml-1">回</span></div>
+        </section>
+        <!-- 5. マイページ -->
+        <section id="page-mypage" class="page max-w-5xl mx-auto space-y-3 text-left">
+            <div class="flex justify-start"><button onclick="navigateTo('dashboard')"
+                    class="flex items-center gap-1 text-slate-400 hover:text-8labo font-bold text-[13px] mt-0.5 mb-0.5"><i
+                        data-lucide="chevron-left" class="w-4 h-4"></i> 戻る</button></div>
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden text-left">
+                <div class="bg-8labo h-10 opacity-90"></div>
+                <div class="px-6 pb-6 -mt-5">
+                    <div class="mypage-grid">
+                        <div class="flex flex-col md:flex-row items-center gap-4 md:gap-6 text-left">
+                            <div class="relative group cursor-pointer" onclick="triggerPhotoUpload()">
+                                <div
+                                    class="w-24 h-24 bg-white rounded-3xl p-1 shadow-xl flex items-center justify-center overflow-hidden">
+                                    <img id="profile-img-preview" src=""
+                                        class="w-full h-full object-cover rounded-[1.25rem] hidden">
+                                    <div id="profile-img-placeholder"
+                                        class="w-full h-full bg-slate-50 rounded-[1.25rem] flex items-center justify-center text-slate-300">
+                                        <i data-lucide="user" class="w-12 h-12"></i>
+                                    </div>
+                                </div>
+                                <div
+                                    class="absolute bottom-1 right-1 w-8 h-8 bg-8labo text-white rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+                                    <i data-lucide="camera" class="w-4 h-4"></i>
+                                </div><input type="file" id="profile-photo-input" class="hidden" accept="image/*"
+                                    onchange="handlePhotoChange(this)">
+                            </div>
+                            <div class="profile-meta space-y-1 text-center md:text-left">
+                                <h3 id="profile-name" class="text-3xl font-black text-slate-800">---</h3>
+                                <p id="profile-email" class="text-xs text-slate-400 font-bold mb-2">---</p><span
+                                    id="profile-type" class="profile-badge paid uppercase">8LABO MEMBERSHIP</span>
+                            </div>
+                        </div>
+                        <div
+                            class="flex flex-col md:flex-row items-center justify-center md:justify-end gap-2 md:gap-4">
+                            <div class="progress-wrap"><svg class="progress-ring" width="150" height="150"
+                                    viewBox="0 0 120 120">
+                                    <circle class="bg" cx="60" cy="60" r="52"></circle>
+                                    <circle id="progress-bar" class="bar" cx="60" cy="60" r="52"
+                                        stroke-dasharray="0 327"></circle>
+                                </svg>
+                                <div class="progress-center">
+                                    <div id="progress-rank-name"
+                                        class="main text-slate-800 uppercase tracking-widest text-center">RANK</div>
+                                    <div id="progress-sub" class="sub text-center">あと0回で SILVER</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-4 w-full md:w-auto text-left">
+                                <div
+                                    class="flex-1 text-center bg-slate-50 px-3 py-2 rounded-[2rem] border border-slate-100 shadow-inner min-w-[100px]">
+                                    <span
+                                        class="block text-[10px] text-slate-400 font-black mb-1 uppercase tracking-widest text-center">参加回数</span><span
+                                        class="text-4xl font-black text-8labo" id="stat-attendance-count">0<span
+                                            class="text-sm ml-0.5">回</span></span>
+                                </div>
+                                <div
+                                    class="flex-1 text-center bg-slate-50 px-3 py-2 rounded-[2rem] border border-slate-100 shadow-inner min-w-[100px]">
+                                    <span
+                                        class="block text-[10px] text-slate-400 font-black mb-1 uppercase tracking-widest text-center">累計ポイント</span><span
+                                        class="text-4xl font-black text-slate-700 text-center" id="stat-points">0<span
+                                            class="text-sm ml-0.5 text-center">pt</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-white p-6 rounded-3xl text-center border">
-                    <div class="text-[10px] text-slate-400 font-black mb-1">累計ポイント</div>
-                    <div id="my-points" class="text-3xl font-black">0<span class="text-sm ml-1">pt</span></div>
-                </div>
+                <div class="px-8 py-3 bg-slate-50/50 border-t border-slate-100 flex justify-end"><button
+                        onclick="setModal('logout')"
+                        class="text-[11px] font-bold text-slate-400 hover:text-red-500 transition-all uppercase tracking-widest flex items-center gap-1"><i
+                            data-lucide="log-out" class="w-3 h-3 text-left"></i> ログアウト</button></div>
+            </div>
+            <div class="space-y-4 px-1 text-left">
+                <h3 class="text-lg font-black flex items-center gap-2 text-slate-700 text-left"><i
+                        data-lucide="bookmark-check" class="text-8labo"></i>予約中のプログラム</h3>
+                <div id="booked-event-list" class="space-y-3 text-left text-left"></div>
             </div>
         </section>
     </main>
-
+    <!-- モーダル集 -->
     <div id="modal-crop" class="modal-overlay">
-        <div class="bg-white p-6 rounded-[2rem] max-w-sm w-full mx-4">
-            <h3 class="font-black mb-4 text-center">写真を切り抜く</h3>
-            <div class="h-64 bg-black rounded-2xl overflow-hidden mb-6"><img id="crop-target" src=""></div>
-            <button onclick="saveCrop()" class="w-full py-4 bg-8labo text-white font-bold rounded-xl">完了</button>
+        <div class="bg-white rounded-[2rem] max-w-sm w-full p-6 shadow-2xl text-center mx-4">
+            <h3 class="text-lg font-black mb-4">写真の範囲を調整</h3>
+            <div class="cropper-container mb-6 rounded-2xl shadow-inner"><img id="crop-image" src=""
+                    style="max-width: 100%;"></div>
+            <div class="flex gap-3"><button onclick="closeModal('modal-crop')"
+                    class="flex-1 py-3 border border-slate-200 rounded-xl font-bold">戻る</button><button
+                    onclick="saveCroppedImage()"
+                    class="flex-1 py-3 bg-8labo text-white rounded-xl font-black">完了</button></div>
         </div>
     </div>
-
+    <div id="modal-confirm" class="modal-overlay">
+        <div class="bg-white rounded-[2rem] max-w-sm w-full p-6 shadow-2xl scale-95 transition-all text-center mx-4">
+            <h3 class="text-lg font-black mb-3 text-slate-800 text-center">申し込み内容の確認</h3>
+            <div id="confirm-details"
+                class="bg-slate-50 p-3 rounded-2xl text-left space-y-0.5 mb-4 border border-slate-100 text-sm"></div>
+            <!-- 同伴不可イベント用ヒント -->
+            <div id="no-companion-hint" class="hidden fade-in-ui text-[10px] font-bold text-slate-400 text-center mb-4">
+                ※このイベントは同伴者の追加ができません</div>
+            <div id="companion-section" class="mb-5 space-y-4 text-center">
+                <div class="space-y-1.5 text-center">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">同伴者数を選択</p>
+                    <div class="flex items-center justify-center gap-5 text-center">
+                        <button onclick="changeAccompaniments(-1)"
+                            class="w-10 h-10 bg-white border-2 border-slate-100 rounded-xl flex items-center justify-center btn-safe-click active:scale-90 shadow-sm hover:border-8labo"><i
+                                data-lucide="minus" class="w-5 h-5"></i></button>
+                        <div class="flex flex-col items-center min-w-[3.5rem] text-center">
+                            <span id="accompaniment-count"
+                                class="text-3xl font-black text-slate-800 leading-none">0</span>
+                            <span class="text-[9px] font-bold text-slate-400 mt-0.5">名</span>
+                        </div>
+                        <button onclick="changeAccompaniments(1)"
+                            class="w-10 h-10 bg-white border-2 border-slate-100 rounded-xl flex items-center justify-center btn-safe-click active:scale-90 shadow-sm hover:border-8labo"><i
+                                data-lucide="plus" class="w-5 h-5"></i></button>
+                    </div>
+                    <p id="companion-max-hint" class="text-[9px] text-slate-300 font-medium italic">※最大◯名まで同伴可能</p>
+                    <p id="companion-warning"
+                        class="hidden fade-in-ui text-[10px] font-bold text-red-500 px-2 mt-3 text-center">
+                        ※同伴者価格は、新規の方またはご家族(お子様)に限定されます。</p>
+                </div>
+                <div id="consent-area" class="hidden fade-in-ui px-1 flex justify-center text-left">
+                    <label class="flex items-start gap-2 cursor-pointer group text-center">
+                        <input type="checkbox" id="consent-check" onchange="toggleBookingButton()"
+                            class="mt-0.5 w-4 h-4 rounded btn-safe-click accent-orange-500">
+                        <span
+                            class="text-[10px] font-bold text-slate-500 leading-tight group-hover:text-8labo transition-colors">同伴者について理解しました</span>
+                    </label>
+                </div>
+                <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3 text-left">
+                    <div class="flex justify-between items-center px-1 text-slate-800">
+                        <span class="text-[11px] font-bold text-slate-500 tracking-tight">予約合計人数</span>
+                        <div class="text-right leading-none">
+                            <span id="summary-total-count"
+                                class="text-2xl font-black text-slate-800 tracking-tighter">1</span>
+                            <span class="text-[10px] font-bold text-slate-500 ml-0.5">名</span>
+                        </div>
+                    </div>
+                    <div class="h-px bg-slate-200 w-full opacity-40"></div>
+                    <div class="flex justify-between items-center px-1 opacity-80">
+                        <span class="text-[11px] font-bold text-slate-400 tracking-tight">合計金額</span>
+                        <div class="text-right leading-none">
+                            <span id="summary-total-price"
+                                class="text-base font-black text-slate-500 tracking-tighter text-8labo">0</span>
+                            <span class="text-[9px] font-bold text-slate-400 ml-1">円</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-3 text-center text-center">
+                <button onclick="closeModal('modal-confirm')"
+                    class="flex-1 py-3 border border-slate-200 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 transition-all btn-safe-click text-sm">戻る</button>
+                <button id="btn-final-confirm" onclick="handleFinalBooking()"
+                    class="flex-1 py-3 bg-8labo text-white rounded-2xl font-black shadow-lg shadow-orange-500/20 active:scale-95 text-center text-sm btn-safe-click">予約を確定</button>
+            </div>
+            <p class="text-[10px] text-slate-400 text-center mt-3">※お支払いは当日、現地にて承ります</p>
+        </div>
+    </div>
+    <div id="modal-detail" class="modal-overlay">
+        <div
+            class="bg-white rounded-[2rem] max-w-md w-full p-6 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-left mx-4 text-left">
+            <div class="flex justify-between items-start mb-4 text-left">
+                <div class="min-w-0 pr-2 text-left"><span
+                        class="text-[10px] font-black bg-orange-50 text-8labo px-2 py-1 rounded-md mb-1 inline-block uppercase tracking-tighter text-left">Details</span>
+                    <h3 id="detail-title"
+                        class="font-black text-slate-900 detail-title-small break-words leading-tight text-left text-left">
+                    </h3>
+                </div><button onclick="closeModal('modal-detail')"
+                    class="p-2 bg-slate-50 hover:bg-slate-100 rounded-full text-slate-400"><i data-lucide="x"
+                        class="w-4 h-4"></i></button>
+            </div>
+            <div class="space-y-4 overflow-y-auto pr-1 flex-grow text-left">
+                <div class="aspect-[16/7] bg-slate-100 rounded-2xl overflow-hidden shadow-inner shrink-0 text-left"><img
+                        id="detail-img" src="" class="w-full h-full object-cover text-left" alt="Event"></div>
+                <div class="space-y-3 text-left">
+                    <p id="detail-description" class="text-sm text-slate-600 leading-relaxed text-left text-left"></p>
+                    <div class="grid grid-cols-2 gap-3 text-left">
+                        <div
+                            class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center flex flex-col items-center justify-center">
+                            <p class="text-xs font-black text-slate-400 mb-1 text-center">参加費（本人）</p>
+                            <p id="detail-price-text"
+                                class="text-xl font-black text-slate-800 leading-none text-center"></p>
+                        </div>
+                        <div
+                            class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-center flex flex-col items-center justify-center">
+                            <p class="text-xs font-black text-slate-400 mb-1 text-center">獲得ポイント</p>
+                            <p id="detail-point-text" class="text-xl font-black text-8labo leading-none text-center">
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="pt-5 text-center"><button onclick="closeModal('modal-detail')"
+                    class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-sm active:scale-95 shadow-md text-center">内容を理解しました</button>
+            </div>
+        </div>
+    </div>
+    <div id="modal-logout" class="modal-overlay text-center">
+        <div class="bg-white rounded-[2rem] max-sm w-full p-8 shadow-2xl mx-4 text-center">
+            <div
+                class="w-16 h-16 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-4 text-center">
+                <i data-lucide="log-out" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-xl font-black mb-2 text-slate-800 text-center">ログアウトしますか？</h3>
+            <div class="flex gap-3 mt-6"><button onclick="closeModal('modal-logout')"
+                    class="flex-1 py-4 border border-slate-200 rounded-2xl font-bold text-center">戻る</button><button
+                    onclick="logout()"
+                    class="flex-1 py-4 bg-8labo text-white rounded-2xl font-black shadow-lg text-center">ログアウト</button>
+            </div>
+        </div>
+    </div>
+    <div id="modal-cancel" class="modal-overlay text-center text-center">
+        <div class="bg-white rounded-[2rem] max-sm w-full p-8 shadow-2xl mx-4 text-center text-center">
+            <div
+                class="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-center">
+                <i data-lucide="alert-circle" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-xl font-black mb-2 text-slate-800 text-center text-center">予約をキャンセル</h3>
+            <div id="cancel-event-details" class="bg-slate-50 p-4 rounded-xl mb-4 text-left border border-slate-100">
+            </div>
+            <p class="text-sm text-slate-400 mb-8">一度キャンセルすると戻せません。</p>
+            <div class="flex gap-3"><button onclick="closeModal('modal-cancel')"
+                    class="flex-1 py-4 border border-slate-200 rounded-2xl font-bold text-center">戻る</button><button
+                    onclick="handleBookingCancel()"
+                    class="flex-1 py-4 bg-red-500 text-white rounded-2xl font-black shadow-lg active:scale-95 text-center">予約を取消す</button>
+            </div>
+        </div>
+    </div>
+    <div id="modal-register-confirm" class="modal-overlay text-center">
+        <div class="bg-white rounded-[2rem] max-sm w-full p-8 shadow-2xl mx-4 text-center">
+            <h3 class="text-lg font-black mb-6 text-slate-800 text-center">以下の内容で登録します</h3>
+            <div class="space-y-4 text-left bg-slate-50 p-6 rounded-2xl mb-6 border border-slate-100">
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">会員ID (メールアドレス)</p>
+                    <p id="reg-conf-email" class="font-bold text-slate-800 break-all"></p>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">パスワード</p>
+                    <p id="reg-conf-pass" class="font-bold text-slate-800 tracking-widest">●●●●●●</p>
+                </div>
+                <p class="text-xs text-red-500 font-bold text-center mt-2">※忘れないようにご注意ください</p>
+            </div>
+            <div class="flex gap-3"><button onclick="closeModal('modal-register-confirm')"
+                    class="flex-1 py-4 border border-slate-200 rounded-2xl font-bold text-center">修正する</button><button
+                    onclick="executeRegister()"
+                    class="flex-1 py-4 bg-8labo text-white rounded-2xl font-black shadow-lg text-center">登録する</button>
+            </div>
+        </div>
+    </div>
+    <div id="modal-location" class="modal-overlay text-left text-left">
+        <div class="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl mx-4 text-left text-left">
+            <div class="flex justify-between items-start mb-4 text-left text-left">
+                <h3 class="text-xl font-black text-slate-800 text-left text-left">アクセス情報</h3><button
+                    onclick="closeModal('modal-location')" class="text-slate-300"><i data-lucide="x"
+                        class="w-4 h-4 text-left"></i></button>
+            </div>
+            <div class="space-y-4 text-left text-left">
+                <div>
+                    <p id="loc-name" class="font-black text-8labo text-lg leading-tight text-left"></p>
+                    <p id="loc-address" class="text-xs text-slate-500 mt-1 text-left"></p>
+                </div>
+                <div class="aspect-video bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 relative"><img
+                        id="loc-map-img" src="" class="absolute inset-0 w-full h-full object-cover opacity-60">
+                    <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-400"><i
+                            data-lucide="map-pin" class="w-8 h-8"></i></div>
+                </div><button onclick="closeModal('modal-location')"
+                    class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-center">閉じる</button>
+            </div>
+        </div>
+    </div>
+    <div id="toast"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-sm font-black px-5 py-3 rounded-2xl shadow-2xl opacity-0 transition-opacity z-[300000] pointer-events-none text-center text-center">
+    </div>
     <script>
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwze0es2U8vBitvPy-ODBKIKFN9L1f2DfFMMHpsg2BhEYGRtFO6rLq8k-Zof3Rj64oYUQ/exec";
-        let userData = null, eventsData = [], selectedEvent = null, cropper = null;
-
-        // 通信関数（CORS対応）
-        async function callApi(action, data = {}) {
-            const res = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action, ...data }) });
-            return res.json();
+        // --- 1. GAS API 連携設定 (必ずデプロイ後のURLに書き換えてください) ---
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxMMRg6Iu2vFC_WmXcMQ6ByeMnZzx1q4NdJh7b8OnzO4xgXTwrrQr24Ohk5TDUgf2_pTA/exec";
+        let isLoggedIn = false; let userData = null; let eventsData = []; let ordersData = []; let accompaniments = 0; let selectedEvent = null; let cropper = null; let targetCancelOrderId = null;
+        async function apiCall(action, data = {}) {
+            try { const response = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action, ...data }) }); return await response.json(); }
+            catch (e) { console.error("API POST Error:", e); return { success: false }; }
         }
-
-        function navigateTo(p) {
-            document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
-            document.getElementById(`page-${p}`).classList.add('active');
-            updateHeader();
-            if(p === 'mypage') renderMyPage();
+        async function fetchFromGas(action, params = {}) {
+            try { const query = new URLSearchParams({ action, ...params }).toString(); const response = await fetch(`${GAS_API_URL}?${query}`); return await response.json(); }
+            catch (e) { console.error("API GET Error:", e); return { success: false }; }
         }
-
+        // --- Password Toggle ---
+        function togglePassword(id, btn) {
+            const input = document.getElementById(id);
+            if (!input) return;
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            const icon = btn.querySelector('i');
+            if (icon) {
+                if (isPassword) {
+                    icon.innerHTML = '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/>';
+                } else {
+                    icon.innerHTML = '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>';
+                }
+                btn.innerHTML = `<i data-lucide="${isPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i>`;
+                lucide.createIcons();
+            }
+        }
+        const RANK_CONFIG = [{ key: 'ENTRY', min: 0, next: 3 }, { key: 'REGULAR', min: 3, next: 10 }, { key: 'BRONZE', min: 10, next: 30 }, { key: 'SILVER', min: 30, next: 50 }, { key: 'GOLD', min: 50, next: 100 }, { key: 'PLATINUM', min: 100, next: null }];
+        function getRankInfo(count) { const c = Number(count) || 0; let current = RANK_CONFIG[0]; for (const r of RANK_CONFIG) if (c >= r.min) current = r; const progress = current.next ? (c - current.min) / (current.next - current.min) : 1; return { name: current.key, progress, remaining: current.next ? current.next - c : 0, nextRank: RANK_CONFIG[RANK_CONFIG.indexOf(current) + 1]?.key }; }
+        function triggerPhotoUpload() { document.getElementById('profile-photo-input').click(); }
         function handlePhotoChange(input) {
-            const file = input.files[0]; if(!file) return;
+            const file = input.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
-                document.getElementById('crop-target').src = e.target.result;
-                document.getElementById('modal-crop').classList.add('active');
-                if(cropper) cropper.destroy();
-                cropper = new Cropper(document.getElementById('crop-target'), { aspectRatio: 1, viewMode: 1 });
+                const img = document.getElementById('crop-image'); img.src = e.target.result;
+                openModal('modal-crop'); if (cropper) cropper.destroy();
+                cropper = new Cropper(img, { aspectRatio: 1, viewMode: 1, dragMode: 'move', autoCropArea: 1, cropBoxMovable: false, cropBoxResizable: false });
             };
             reader.readAsDataURL(file);
         }
-
-        async function saveCrop() {
-            const b64 = cropper.getCroppedCanvas().toDataURL('image/jpeg');
-            userData.profileImage = b64;
-            await callApi('saveUserData', userData);
-            document.getElementById('modal-crop').classList.remove('active');
-            renderMyPage();
+        async function saveCroppedImage() {
+            const canvas = cropper.getCroppedCanvas({ width: 256, height: 256 }); const b64 = canvas.toDataURL('image/jpeg');
+            userData.profileImage = b64; await apiCall('saveUserData', userData);
+            applyProfileImageToUI(b64); closeModal('modal-crop'); showToast("写真を保存しました");
         }
-
-        // イベント描画（ボタン動作を物理的に守る）
-        function renderEvents() {
-            const grids = [document.getElementById('guest-event-grid'), document.getElementById('member-event-grid')];
-            grids.forEach(grid => {
-                if(!grid) return;
-                grid.innerHTML = eventsData.map(e => `
-                    <div class="bg-white rounded-[2.5rem] p-6 border event-card">
-                        <div class="flex justify-between mb-4"><span class="bg-orange-50 text-8labo px-3 py-1 rounded-lg font-bold">${e.date}</span></div>
-                        <div class="flex justify-between items-start mb-4">
-                            <h4 class="font-black text-xl">${e.title}</h4>
-                            <button onclick="alert('${e.description}')" class="btn-safe-click w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center text-slate-300"><i data-lucide="info" class="w-4 h-4"></i></button>
-                        </div>
-                        <div class="flex justify-between items-center mb-6">
-                            <span class="text-8labo font-black text-xl">${e.time}</span>
-                            <span class="font-black">¥${e.personalPrice.toLocaleString()}</span>
-                        </div>
-                        <button onclick="alert('予約画面へ')" class="btn-safe-click w-full py-4 bg-8labo text-white font-bold rounded-2xl shadow-lg">申し込む</button>
-                    </div>
-                `).join('');
-            });
+        function applyProfileImageToUI(b64) {
+            const img = document.getElementById('profile-img-preview'); const placeholder = document.getElementById('profile-img-placeholder');
+            if (b64) { img.src = b64; img.classList.remove('hidden'); placeholder.classList.add('hidden'); }
+            else { img.classList.add('hidden'); placeholder.classList.remove('hidden'); }
+        }
+        function navigateTo(p) { document.querySelectorAll('.page').forEach(x => x.classList.remove('active')); const t = document.getElementById(`page-${p}`); if (t) t.classList.add('active'); window.scrollTo({ top: 0, behavior: 'smooth' }); updateHeader(p); if (p === 'mypage') refreshAndRenderMyPage(); }
+        function goHome() { navigateTo(isLoggedIn ? 'dashboard' : 'guest-top'); }
+        function updateHeader(p) {
+            const nav = document.getElementById('header-nav');
+            if (isLoggedIn) { nav.innerHTML = `<div onclick="event.stopPropagation(); navigateTo('mypage')" class="flex items-center gap-2 cursor-pointer p-1 pr-3 hover:bg-slate-50 rounded-full transition-all text-left"><span class="text-sm font-bold text-slate-600 text-left">${userData.name}</span><div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 shadow-inner"><i data-lucide="user" class="w-4 h-4 text-left"></i></div></div>`; }
+            else { const label = p === 'login' ? '新規登録' : 'ログイン'; const target = p === 'login' ? 'register' : 'login'; nav.innerHTML = `<button onclick="event.stopPropagation(); navigateTo('${target}')" class="text-xs font-black text-8labo border-2 border-8labo px-4 py-2 rounded-xl hover:bg-orange-50 uppercase tracking-widest text-center text-center text-center text-center text-center">${label}</button>`; }
             lucide.createIcons();
         }
-
-        // 初期化
+        // --- 画像処理ロジック ---
+        const DEFAULT_IMAGES = {
+            'yoga': 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=600',
+            'stretch': 'https://images.unsplash.com/photo-1552196564-972b3693f00a?q=80&w=600',
+            'training': 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=600',
+            'run': 'https://images.unsplash.com/photo-1552674605-1e227284b80e?q=80&w=600',
+            'pilates': 'https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=600',
+            'morning': 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=600',
+            'night': 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=600',
+            'default': 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=600',
+            'map': 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=600' // シンプルな地図っぽい画像
+        };
+        function resolveEventImage(event) {
+            if (event.img && event.img.startsWith('http')) return event.img;
+            // タイトルと説明文を小文字にして結合し、検索しやすくする
+            const text = ((event.title || "") + " " + (event.description || "")).toLowerCase();
+            if (text.includes('ヨガ') || text.includes('yoga') || text.includes('mindfulness') || text.includes('meditation') || text.includes('瞑想')) return DEFAULT_IMAGES['yoga'];
+            if (text.includes('ストレッチ') || text.includes('stretch')) return DEFAULT_IMAGES['stretch'];
+            if (text.includes('ピラティス') || text.includes('pilates')) return DEFAULT_IMAGES['pilates'];
+            if (text.includes('ラン') || text.includes('走') || text.includes('run') || text.includes('marathon')) return DEFAULT_IMAGES['run'];
+            if (text.includes('トレーニング') || text.includes('筋トレ') || text.includes('hiit') || text.includes('training') || text.includes('workout') || text.includes('ジム') || text.includes('kick') || text.includes('boxing') || text.includes('fight') || text.includes('zumba') || text.includes('dance') || text.includes('aerobics') || text.includes('ボクササイズ') || text.includes('キック') || text.includes('ダンス') || text.includes('ボクシング') || text.includes('エアロビ')) return DEFAULT_IMAGES['training'];
+            if (text.includes('朝') || text.includes('morning')) return DEFAULT_IMAGES['morning'];
+            if (text.includes('夕') || text.includes('夜') || text.includes('night') || text.includes('evening')) return DEFAULT_IMAGES['night'];
+            return DEFAULT_IMAGES['default'];
+        }
+        function resolveMapImage(url) {
+            if (url && url.startsWith('http')) return url;
+            return DEFAULT_IMAGES['map'];
+        }
+        async function renderEvents() {
+            try {
+                const res = await fetchFromGas('getEventsData'); if (!res.success) return;
+                eventsData = res.events; document.getElementById('calendar-iframe').src = res.calendarUrl;
+                [document.getElementById('guest-event-grid'), document.getElementById('member-event-grid')].forEach((grid, idx) => {
+                    if (!grid) return; const isM = idx === 1;
+                    grid.innerHTML = eventsData.map(e => {
+                        const isB = ordersData.some(o => o.eventId === e.id && o.status !== 'キャンセル');
+                        const rem = e.capacity - e.enrollees;
+                        const cPrice = (e.personalPrice !== e.companionPrice && e.maxAccompaniments > 0) ? `<span class="text-[10px] text-slate-400 font-bold ml-1 text-left">(同伴 ¥${e.companionPrice.toLocaleString()})</span>` : "";
+                        return `
+                         <div class="bg-white rounded-[2rem] border border-slate-200 p-6 card-hover flex flex-col justify-between h-full shadow-sm text-left event-card">
+                             <div class="space-y-4 text-left">
+                                 <div class="flex justify-between items-center"><span class="text-sm font-black bg-orange-50 text-8labo px-3 py-1 rounded-lg tracking-tight">${e.date}</span><span class="text-[10px] font-bold ${rem <= 0 ? 'text-red-500 bg-red-50' : 'text-slate-400 bg-slate-50'} px-2 py-1 rounded-md text-left">${rem <= 0 ? '満員' : `残り ${rem} 名`}</span></div>
+                                 <div class="space-y-1 text-left">
+                                     <div class="flex items-start gap-3 justify-between text-left">
+                                         <h4 class="font-black text-slate-800 text-lg leading-tight flex-grow break-words text-left text-left">${e.title}</h4>
+                                         <button onclick="event.stopPropagation(); openDetailModal('${e.id}')" class="shrink-0 w-8 h-8 flex items-center justify-center bg-slate-50 text-slate-300 hover:text-8labo rounded-full transition-colors relative z-10"><i data-lucide="info" class="w-4 h-4"></i></button>
+                                     </div>
+                                     <div class="price-align-row text-left"><p class="text-8labo font-black text-xl tracking-tighter text-left text-left">${e.time}</p><div class="text-8labo font-black text-sm text-right text-right"><span>¥${e.personalPrice.toLocaleString()}</span>${cPrice}</div></div>
+                                 </div>
+                                 <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100 text-left">
+                                     <p class="text-[11px] text-slate-500 font-bold flex items-center gap-1 min-w-0 text-left"><i data-lucide="map-pin" class="w-3 h-3 text-8labo/50 text-left text-left"></i> <span class="truncate text-left text-left">${e.location}</span></p>
+                                     <button onclick="event.stopPropagation(); openLocationModal('${e.id}')" class="text-[9px] bg-white border border-slate-200 text-slate-400 px-2 py-1 rounded-lg font-black shadow-sm hover:border-8labo relative z-10">MAP</button>
+                                 </div>
+                             </div>
+                             <div class="mt-4 text-left">
+                                 ${isM ? (isB ? `<div class="w-full py-4 bg-green-50 text-green-600 rounded-2xl text-sm font-black text-center flex items-center justify-center gap-2 shadow-inner text-center"><i data-lucide="check-circle" class="w-4 h-4 text-center text-center"></i> 予約済み</div>` : `<div class="flex items-center justify-start px-1 mb-2 text-left text-left"><label class="flex items-center gap-2 cursor-pointer group text-left text-left"><input type="checkbox" id="cal-${e.id}" class="w-4 h-4 accent-orange-500 rounded border-slate-300 transition-all text-left text-left relative z-10"><span class="text-[10px] text-slate-400 group-hover:text-8labo text-left text-left">カレンダー追加</span></label></div><button onclick="event.stopPropagation(); confirmAction('${e.id}')" ${rem <= 0 ? 'disabled' : ''} class="w-full py-4 ${rem <= 0 ? 'bg-slate-100 text-slate-300' : 'bg-8labo text-white shadow-lg active:scale-95'} rounded-2xl text-sm font-black transition-all relative z-10">申し込む</button>`) : `<button onclick="event.stopPropagation(); navigateTo('login')" class="w-full py-4 bg-slate-900 text-white rounded-2xl text-sm font-black shadow-lg active:scale-95 text-center text-center relative z-10">ログインして予約</button>`}
+                             </div>
+                         </div>`;
+                    }).join('');
+                });
+                lucide.createIcons();
+            } catch (err) { console.error("Event Fetch Error:", err); }
+        }
+        function openDetailModal(id) {
+            selectedEvent = eventsData.find(x => x.id == id);
+            if (!selectedEvent) return;
+            document.getElementById('detail-title').innerText = selectedEvent.title;
+            document.getElementById('detail-description').innerText = selectedEvent.description;
+            document.getElementById('detail-price-text').innerText = `¥${selectedEvent.personalPrice.toLocaleString()}`;
+            document.getElementById('detail-point-text').innerText = `${selectedEvent.selfPoints} pt`;
+            document.getElementById('detail-img').src = resolveEventImage(selectedEvent);
+            openModal('modal-detail');
+        }
+        function openLocationModal(id) {
+            selectedEvent = eventsData.find(x => x.id == id);
+            if (!selectedEvent) return;
+            document.getElementById('loc-name').innerText = selectedEvent.location;
+            document.getElementById('loc-address').innerText = selectedEvent.address;
+            const mapImg = document.getElementById('loc-map-img');
+            mapImg.src = resolveMapImage(selectedEvent.map);
+            mapImg.onerror = function () { this.src = DEFAULT_IMAGES['map']; };
+            mapImg.parentElement.onclick = function () {
+                const query = encodeURIComponent(selectedEvent.address || selectedEvent.location);
+                window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+            };
+            openModal('modal-location');
+        }
+        function confirmAction(id) {
+            selectedEvent = eventsData.find(x => x.id == id); accompaniments = 0;
+            const maxAcc = Number(selectedEvent.maxAccompaniments) || 0;
+            const cs = document.getElementById('companion-section');
+            const nh = document.getElementById('no-companion-hint');
+            const maxHint = document.getElementById('companion-max-hint');
+            if (maxAcc > 0) {
+                if (cs) cs.classList.remove('hidden');
+                if (nh) nh.classList.add('hidden');
+                if (maxHint) maxHint.innerText = `※最大${maxAcc}名まで同伴可能`;
+            } else {
+                if (cs) cs.classList.add('hidden');
+                if (nh) nh.classList.remove('hidden');
+            }
+            document.getElementById('confirm-details').innerHTML = `<p class="font-black text-slate-800 text-base leading-tight mb-2 break-words text-left text-left">${selectedEvent.title}</p><div class="text-xs text-slate-500 font-bold leading-tight text-left text-left text-left"><p class="mb-1">${selectedEvent.date} / ${selectedEvent.time}</p><p>場所: ${selectedEvent.location}</p></div>`;
+            const chk = document.getElementById('consent-check');
+            if (chk) chk.checked = false;
+            updateCounterUI(); openModal('modal-confirm');
+        }
+        function changeAccompaniments(v) {
+            const maxAcc = Number(selectedEvent.maxAccompaniments) || 0;
+            const nv = accompaniments + v;
+            if (nv >= 0 && nv <= maxAcc) {
+                accompaniments = nv;
+                updateCounterUI();
+                const el = document.getElementById('accompaniment-count');
+                if (el) {
+                    el.classList.remove('count-change');
+                    void el.offsetWidth; // trigger reflow
+                    el.classList.add('count-change');
+                }
+            }
+        }
+        function updateCounterUI() {
+            document.getElementById('accompaniment-count').innerText = accompaniments;
+            document.getElementById('summary-total-count').innerText = (1 + accompaniments) + "名";
+            const total = selectedEvent.personalPrice + (selectedEvent.companionPrice * accompaniments);
+            document.getElementById('summary-total-price').innerText = total.toLocaleString();
+            if (accompaniments >= 1) {
+                document.getElementById('companion-warning').classList.remove('hidden');
+                document.getElementById('consent-area').classList.remove('hidden');
+            } else {
+                document.getElementById('companion-warning').classList.add('hidden');
+                document.getElementById('consent-area').classList.add('hidden');
+            }
+            toggleBookingButton();
+        }
+        function toggleBookingButton() { const btn = document.getElementById('btn-final-confirm'); const chk = document.getElementById('consent-check'); if (accompaniments >= 1 && !chk.checked) btn.classList.add('opacity-20', 'pointer-events-none'); else btn.classList.remove('opacity-20', 'pointer-events-none'); }
+        async function handleFinalBooking() {
+            if (ordersData.some(o => o.eventId === selectedEvent.id && o.status !== 'キャンセル')) {
+                showToast("既に予約済みです");
+                closeModal('modal-confirm');
+                return;
+            }
+            const btn = document.getElementById('btn-final-confirm');
+            const originalText = btn.innerText;
+            btn.innerHTML = '<div class="loading-spinner mx-auto"></div>';
+            btn.disabled = true;
+            const booking = { id: 'ord_' + Date.now(), eventId: selectedEvent.id, email: userData.email, userName: userData.name, companionCount: accompaniments, status: '予約中' };
+            ordersData.push(booking); await apiCall('recordBooking', booking);
+            saveAppToLocal();
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            closeModal('modal-confirm'); showToast(`予約を確定しました`); renderEvents(); refreshAndRenderMyPage();
+        }
+        async function handleLoginSubmit() {
+            const email = document.getElementById('login-email').value; const pass = document.getElementById('login-password').value;
+            const res = await fetchFromGas('getUserData', { email, password: pass });
+            if (res && res.success && res.user) { userData = res.user; isLoggedIn = true; saveAppToLocal(); navigateTo('dashboard'); }
+            else { alert("IDまたはパスワードが正しくありません"); }
+        }
+        function handleRegisterSubmit(form) {
+            const formData = new FormData(form);
+            const email = formData.get('email');
+            const pass = formData.get('password');
+            document.getElementById('reg-conf-email').innerText = email;
+            document.getElementById('reg-conf-pass').innerText = pass;
+            userData = Object.fromEntries(formData.entries());
+            openModal('modal-register-confirm');
+        }
+        async function executeRegister() {
+            const btn = document.querySelector('#modal-register-confirm button:last-child');
+            const originalText = btn.innerText;
+            btn.innerHTML = '<div class="loading-spinner mx-auto"></div>';
+            btn.disabled = true;
+            userData.attendanceCount = 0; userData.points = 0; ordersData = [];
+            await apiCall('saveUserData', userData); saveAppToLocal();
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            isLoggedIn = true;
+            closeModal('modal-register-confirm');
+            navigateTo('dashboard');
+        }
+        function refreshAndRenderMyPage() {
+            if (!userData) return;
+            const info = getRankInfo(userData.attendanceCount); document.getElementById('profile-name').innerText = userData.name + " 様";
+            document.getElementById('profile-email').innerText = userData.email; document.getElementById('progress-rank-name').innerText = info.name;
+            document.getElementById('progress-sub').innerText = info.nextRank ? `あと${info.remaining}回で ${info.nextRank}` : "最高ランク到達";
+            const circ = 2 * Math.PI * 52; document.getElementById('progress-bar').setAttribute('stroke-dasharray', `${circ * info.progress} ${circ}`);
+            document.getElementById('stat-attendance-count').innerHTML = `${userData.attendanceCount}<span class="text-sm ml-0.5">回</span>`;
+            document.getElementById('stat-points').innerHTML = `${userData.points.toLocaleString()}<span class="text-sm ml-0.5 text-center">pt</span>`;
+            applyProfileImageToUI(userData.profileImage); renderBookedEvents();
+        }
+        function renderBookedEvents() {
+            const tempOrders = [...ordersData];
+            const myo = tempOrders.filter(o => o.status !== 'キャンセル');
+            const uniqueEventIds = [...new Set(myo.map(o => o.eventId))];
+            const container = document.getElementById('booked-event-list');
+            if (uniqueEventIds.length === 0) { container.innerHTML = `<div class="bg-slate-50 border-2 border-dashed border-slate-100 rounded-3xl p-8 text-center text-slate-300 font-bold text-sm">予約中のプログラムはありません</div>`; return; }
+            container.innerHTML = uniqueEventIds.map(eid => {
+                const e = eventsData.find(x => x.id === eid);
+                const o = myo.reverse().find(order => order.eventId === eid);
+                myo.reverse();
+                if (!e || !o) return '';
+                return `<div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between gap-4 overflow-hidden"><div class="flex items-center gap-3 min-w-0 flex-grow text-left text-left"><div class="bg-orange-50 text-8labo w-12 h-12 rounded-xl flex flex-col items-center justify-center font-black text-[10px] leading-none shrink-0 tracking-tighter text-center text-center"><span>${e.date.split('.')[1]}月</span><span class="text-sm mt-0.5 text-center text-center">${e.date.split('.')[2].split(' ')[0]}日</span></div><div class="min-w-0 flex-grow text-left text-left text-left"><h4 class="font-bold text-sm text-slate-800 leading-tight break-words text-left text-left text-left">${e.title}</h4><p class="text-[10px] text-slate-400 font-medium mt-1 text-left text-left text-left">@ ${e.location}</p></div></div><button onclick="event.stopPropagation(); targetCancelOrderId='${o.id}'; selectedEvent = eventsData.find(ev => ev.id == '${o.eventId}'); openCancelModal();" class="text-[11px] font-black text-slate-300 hover:text-red-500 uppercase shrink-0 pl-2 transition-colors relative z-10">取消</button></div>`;
+            }).join(''); lucide.createIcons();
+        }
+        function openCancelModal() {
+            if (!selectedEvent) return;
+            document.getElementById('cancel-event-details').innerHTML = `<p class="font-black text-slate-800 text-sm leading-tight mb-1 break-words text-left text-left">${selectedEvent.title}</p><p class="text-xs text-slate-500 font-bold leading-tight text-left text-left">${selectedEvent.date} / ${selectedEvent.time}</p>`;
+            openModal('modal-cancel');
+        }
+        async function handleBookingCancel() {
+            const btn = document.querySelector('#modal-cancel button:last-child');
+            const originalText = btn.innerText;
+            btn.innerHTML = '<div class="loading-spinner mx-auto"></div>';
+            btn.disabled = true;
+            await apiCall('cancelBooking', { userName: userData.name, eventId: selectedEvent.id });
+            const idx = ordersData.findIndex(o => o.id === targetCancelOrderId);
+            if (idx !== -1) { ordersData[idx].status = 'キャンセル'; saveAppToLocal(); closeModal('modal-cancel'); showToast('キャンセルしました'); refreshAndRenderMyPage(); renderEvents(); }
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        function saveAppToLocal() { localStorage.setItem('bizfit_master_v38', JSON.stringify({ userData, ordersData })); }
+        function loadAppFromLocal() { const saved = localStorage.getItem('bizfit_master_v38'); if (saved) { const p = JSON.parse(saved); userData = p.userData; ordersData = p.ordersData; return true; } return false; }
+        function logout() { isLoggedIn = false; localStorage.removeItem('bizfit_master_v38'); closeModal('modal-logout'); navigateTo('guest-top'); }
+        function devReset() { logout(); location.reload(); }
+        function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.opacity = '1'; setTimeout(() => t.style.opacity = '0', 3000); }
+        function openModal(id) { const m = document.getElementById(id); m.classList.add('active'); m.querySelector('div').classList.remove('scale-95'); }
+        function closeModal(id) { const m = document.getElementById(id); m.querySelector('div').classList.add('scale-95'); setTimeout(() => m.classList.remove('active'), 200); }
         window.onload = async () => {
-            const res = await fetch(`${GAS_API_URL}?action=getEventsData`).then(r => r.json());
-            eventsData = res.events;
-            document.getElementById('calendar-iframe').src = res.calendarUrl;
-            renderEvents();
-            navigateTo('guest-top');
+            await renderEvents();
+            if (loadAppFromLocal()) { isLoggedIn = true; navigateTo('dashboard'); }
+            else { isLoggedIn = false; navigateTo('guest-top'); }
+            lucide.createIcons();
         };
     </script>
 </body>
