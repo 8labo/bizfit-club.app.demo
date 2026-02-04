@@ -383,20 +383,27 @@
             <div class="space-y-4 px-1 text-left">
                 <h3 class="text-xl font-black flex items-center gap-2 text-slate-800"><i data-lucide="calendar"
                         class="text-8labo"></i>公式スケジュール</h3>
-                <div class="calendar-container"><iframe id="calendar-iframe" src="" style="border: 0" width="100%"
-                        height="450" frameborder="0" scrolling="no"></iframe></div>
+                <div
+                    class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl h-64 flex flex-col items-center justify-center text-slate-400 font-bold gap-2">
+                    <i data-lucide="cone" class="w-8 h-8 opacity-50"></i>
+                    <p>現在調整中です</p>
+                </div>
             </div>
-            <div class="space-y-4 px-1 text-left">
-                <h3 class="text-xl font-black flex items-center gap-2 text-slate-800"><i data-lucide="backpack"
-                        class="text-8labo"></i>持ち物・注意事項</h3>
-                <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-                    <ul class="list-disc list-inside space-y-2 text-sm text-slate-600 font-medium">
-                        <li>動きやすい服装（Tシャツ、ハーフパンツ、レギンスなど）</li>
-                        <li>室内シューズ（土足厳禁のエリアがあります）</li>
-                        <li>汗拭きタオル</li>
-                        <li>水分補給用の飲み物</li>
-                        <li><span class="text-8labo font-bold">※</span> シャワールーム完備（アメニティあり）</li>
-                    </ul>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4 px-1 text-left">
+                    <h3 class="text-xl font-black flex items-center gap-2 text-slate-800"><i data-lucide="backpack"
+                            class="text-8labo"></i>持ち物</h3>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm h-full">
+                        <p class="text-sm text-slate-600 font-bold leading-relaxed">室内シューズ、タオル、飲み物</p>
+                    </div>
+                </div>
+                <div class="space-y-4 px-1 text-left">
+                    <h3 class="text-xl font-black flex items-center gap-2 text-slate-800"><i
+                            data-lucide="alert-triangle" class="text-8labo"></i>注意事項</h3>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm h-full">
+                        <p class="text-sm text-slate-600 font-medium leading-relaxed">
+                            安全に配慮した運営を行っておりますが、活動の特性上、ケガや事故の可能性があります。万が一の場合は応急対応を行いますが、それ以降の責任は負いかねますのでご了承ください。</p>
+                    </div>
                 </div>
             </div>
         </section>
