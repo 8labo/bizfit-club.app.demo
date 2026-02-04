@@ -489,7 +489,7 @@
                         <input type="checkbox" id="consent-check" onchange="toggleBookingButton()"
                             class="mt-0.5 w-4 h-4 rounded btn-safe-click accent-orange-500">
                         <span
-                            class="text-[10px] font-bold text-slate-500 leading-tight group-hover:text-8labo transition-colors">同伴者は非会員であることを確認しました</span>
+                            class="text-[10px] font-bold text-slate-500 leading-tight group-hover:text-8labo transition-colors">同伴者について理解しました</span>
                     </label>
                 </div>
                 <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3 text-left">
@@ -712,11 +712,11 @@
             if (event.img && event.img.startsWith('http')) return event.img;
             // タイトルと説明文を小文字にして結合し、検索しやすくする
             const text = ((event.title || "") + " " + (event.description || "")).toLowerCase();
-            if (text.includes('ヨガ') || text.includes('yoga')) return DEFAULT_IMAGES['yoga'];
+            if (text.includes('ヨガ') || text.includes('yoga') || text.includes('mindfulness') || text.includes('meditation') || text.includes('瞑想')) return DEFAULT_IMAGES['yoga'];
             if (text.includes('ストレッチ') || text.includes('stretch')) return DEFAULT_IMAGES['stretch'];
             if (text.includes('ピラティス') || text.includes('pilates')) return DEFAULT_IMAGES['pilates'];
             if (text.includes('ラン') || text.includes('走') || text.includes('run') || text.includes('marathon')) return DEFAULT_IMAGES['run'];
-            if (text.includes('トレーニング') || text.includes('筋トレ') || text.includes('hiit') || text.includes('training') || text.includes('workout') || text.includes('ジム')) return DEFAULT_IMAGES['training'];
+            if (text.includes('トレーニング') || text.includes('筋トレ') || text.includes('hiit') || text.includes('training') || text.includes('workout') || text.includes('ジム') || text.includes('kick') || text.includes('boxing') || text.includes('fight') || text.includes('zumba') || text.includes('dance') || text.includes('aerobics') || text.includes('ボクササイズ') || text.includes('キック') || text.includes('ダンス') || text.includes('ボクシング') || text.includes('エアロビ')) return DEFAULT_IMAGES['training'];
             if (text.includes('朝') || text.includes('morning')) return DEFAULT_IMAGES['morning'];
             if (text.includes('夕') || text.includes('夜') || text.includes('night') || text.includes('evening')) return DEFAULT_IMAGES['night'];
             return DEFAULT_IMAGES['default'];
@@ -752,9 +752,7 @@
                                  </div>
                              </div>
                              <div class="mt-4 text-left">
-                                 ${isM ? (isB ? `<div class="w-full py-4 bg-green-50 text-green-600 rounded-2xl text-sm font-black text-center flex items-center justify-center gap-2 shadow-inner text-center"><i data-lucide="check-circle" class="w-4 h-4 text-center text-center"></i> 予約済み</div>` : `<label class="flex items-center gap-2 cursor-pointer group text-left text-left"><input type="checkbox"                        class="w-4 h-4 accent-orange-500 rounded border-slate-300 transition-all text-left text-left"><span
-                        class="text-xs font-bold text-slate-600 group-hover:text-8labo text-left text-left">同伴者について理解しました</span></label>
-            </div><button onclick="event.stopPropagation(); confirmAction('${e.id}')" ${rem <= 0 ? 'disabled' : ''} class="w-full py-4 ${rem <= 0 ? 'bg-slate-100 text-slate-300' : 'bg-8labo text-white shadow-lg active:scale-95'} rounded-2xl text-sm font-black transition-all relative z-10">申し込む</button>`) : `<button onclick="event.stopPropagation(); navigateTo('login')" class="w-full py-4 bg-slate-900 text-white rounded-2xl text-sm font-black shadow-lg active:scale-95 text-center text-center relative z-10">ログインして予約</button>`}
+                                 ${isM ? (isB ? `<div class="w-full py-4 bg-green-50 text-green-600 rounded-2xl text-sm font-black text-center flex items-center justify-center gap-2 shadow-inner text-center"><i data-lucide="check-circle" class="w-4 h-4 text-center text-center"></i> 予約済み</div>` : `<div class="flex items-center justify-start px-1 mb-2 text-left text-left"><label class="flex items-center gap-2 cursor-pointer group text-left text-left"><input type="checkbox" id="cal-${e.id}" class="w-4 h-4 accent-orange-500 rounded border-slate-300 transition-all text-left text-left relative z-10"><span class="text-[10px] text-slate-400 group-hover:text-8labo text-left text-left">カレンダー追加</span></label></div><button onclick="event.stopPropagation(); confirmAction('${e.id}')" ${rem <= 0 ? 'disabled' : ''} class="w-full py-4 ${rem <= 0 ? 'bg-slate-100 text-slate-300' : 'bg-8labo text-white shadow-lg active:scale-95'} rounded-2xl text-sm font-black transition-all relative z-10">申し込む</button>`) : `<button onclick="event.stopPropagation(); navigateTo('login')" class="w-full py-4 bg-slate-900 text-white rounded-2xl text-sm font-black shadow-lg active:scale-95 text-center text-center relative z-10">ログインして予約</button>`}
                              </div>
                          </div>`;
                     }).join('');
